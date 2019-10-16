@@ -4,6 +4,15 @@ version = "0.1.0"
 authors = ["Lucius Hu <lebensterben@users.noreply.github.com>"]
 edition = "2018"
 
+description = "A Rust Implemtation of Ed-Join Algorithm for string similarity join"
+repository = "https://github.com/lebensterben/ed_join"
+
+keywords = ["string", "similarity", "text-processing", "algorithm"]
+
+catetories = ["algorithms", "text-processing"]
+
+license = "Apache-2.0 AND MIT"
+
 [dependencies]
 clap = "2.33.0"
 dialoguer = "0.4.0"
