@@ -9,7 +9,7 @@ repository = "https://github.com/lebensterben/ed_join"
 
 keywords = ["string", "similarity", "text-processing", "algorithm"]
 
-catetories = ["algorithms", "text-processing"]
+categories = ["algorithms", "text-processing"]
 
 license = "Apache-2.0 AND MIT"
 
