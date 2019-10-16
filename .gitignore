@@ -5,5 +5,3 @@
 **/*.rs.bk
 
 /sample_test*.txt
-
-/testset/
