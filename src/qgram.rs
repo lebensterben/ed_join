@@ -239,7 +239,10 @@ mod tests {
     #[test]
     fn pos_qgram_array() {
         let pos_qgram = PosQGramArray::from("hello", 2);
-        assert_eq!(format!("{}", &pos_qgram), "PosQGramArray { inner: [PosQGram { token: \"he\", loc: 0 }, PosQGram { token: \"el\", loc: 1 }, PosQGram { token: \"ll\", loc: 2 }, PosQGram { token: \"lo\", loc: 3 }] }");
+        assert_eq!(
+            format!("{}", &pos_qgram),
+            "[(he, 0), (el, 1), (ll, 2), (lo, 3)]"
+        );
     }
 
     #[test]
