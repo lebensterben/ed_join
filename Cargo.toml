@@ -9,6 +9,9 @@ keywords = ["string", "similarity", "text-processing", "algorithm"]
 categories = ["algorithms", "text-processing"]
 license = "Apache-2.0 AND MIT"
 
+[badges]
+travis-ci = { repository = "lebensterben/ed_join" }
+
 [dependencies]
 clap = "2.33.0"
 dialoguer = "0.4.0"
