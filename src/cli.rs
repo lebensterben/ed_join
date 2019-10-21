@@ -68,8 +68,8 @@ fn tau_validator(v: &str) -> Result<usize> {
 
 pub(crate) fn parse_config() -> Result<Config> {
     let matches = App::new("EdJoin")
-        .version("0.0.1")
-        .author("Lucius Hu <orctarorga@gmail.com>")
+        .author("Lucius Hu")
+        .version(clap::crate_version!())
         .about("String Similarity Join with Ed-Join Algorithm")
         .usage(
             "\
