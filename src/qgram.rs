@@ -1,6 +1,4 @@
 use indexmap::IndexMap;
-use indicatif::{ParallelProgressIterator, ProgressBar};
-use log::trace;
 use parking_lot::RwLock;
 use rayon::prelude::*;
 use std::{
@@ -12,7 +10,6 @@ use std::{
     sync::Arc,
 };
 
-use crate::cli::ProgressBarBuilder;
 use crate::errors::*;
 
 /// A symbol, such as a q-gram
@@ -25,7 +22,7 @@ pub(crate) type Loc = usize;
 /**
 A poistional q-gram is a `token`-`location` pair for a given string.
  */
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct PosQGram {
     pub token: Token,
     pub loc: Loc,
@@ -87,9 +84,10 @@ impl PosQGramArray {
         }
     }
 
-    // PosQGramArray is sorted in increasing order of location
     /**
     Given a string and a given `q`, generate a PosQGramArray.
+
+    NOTE: The position QGramArray is sorted in increasing order of location.
      */
     pub fn from(s: &str, q: usize) -> Self {
         let slice: Vec<String> = Vec::from(s)
@@ -161,7 +159,7 @@ It may look silly to do such a thing, but a file with 1 million lines where each
 * When succesful, returns a B-Tree map, where keys are numbers of occurences of all token, i.e. a q-gram, and values are vectors of tokens that have that number of occurences.
 
  */
-pub(crate) fn generate_inverted_list(doc: &PathBuf, q: usize) -> Result<InvertedIndex> {
+pub(crate) fn generate_inverted_index(doc: &PathBuf, q: usize) -> Result<InvertedIndex> {
     let file: File = File::open(doc)?;
     let mut reader: BufReader<File> = BufReader::new(file);
     let mut buffer: String = String::new();
@@ -177,38 +175,44 @@ pub(crate) fn generate_inverted_list(doc: &PathBuf, q: usize) -> Result<Inverted
         // Convert the buffer into a Vec<Vec<u8>> so we can use enumerate on the file
         .collect();
 
-    // progress bar
-    let pbar: ProgressBar =
-        ProgressBarBuilder::new(buffer.par_lines().count(), "Making InvertedIndex").build();
+    #[cfg(not(feature = "cli"))]
+    let buffer_iter = buffer_vec.par_iter().enumerate();
+    #[cfg(feature = "cli")]
+    let buffer_iter;
+    #[cfg(feature = "cli")]
+    {
+        use crate::cli::ProgressBarBuilder;
+        use indicatif::{ParallelProgressIterator, ProgressBar};
+        // progress bar
+        let pbar: ProgressBar =
+            ProgressBarBuilder::new(buffer.par_lines().count(), "Making InvertedIndex").build();
+        buffer_iter = buffer_vec.par_iter().enumerate().progress_with(pbar);
+    }
 
-    buffer_vec
-        .par_iter()
-        .enumerate()
-        .progress_with(pbar)
-        .for_each(
-            // Though each line is Vec<u8> type, enumerate() returns it as a slice of u8
-            |(line_id, line_content)| {
-                // Make a clone and the references count will increase by 1
-                let guard = ngram_map_protected.clone();
+    buffer_iter.for_each(
+        // Though each line is Vec<u8> type, enumerate() returns it as a slice of u8
+        |(line_id, line_content)| {
+            // Make a clone and the references count will increase by 1
+            let guard = ngram_map_protected.clone();
 
-                // `par_windows()` creates a parallel iterator on ovelapping slices of the input
-                let slice: Vec<_> = line_content
-                    .par_windows(q)
-                    // convert u8 to &[str], and then String, so we can use enumerate method on each qgram
-                    .map(|ngrams| {
-                        std::str::from_utf8(ngrams)
-                            .expect("Error when parsing ngrams")
-                            .to_string()
-                    })
-                    .collect();
+            // `par_windows()` creates a parallel iterator on ovelapping slices of the input
+            let slice: Vec<_> = line_content
+                .par_windows(q)
+                // convert u8 to &[str], and then String, so we can use enumerate method on each qgram
+                .map(|ngrams| {
+                    std::str::from_utf8(ngrams)
+                        .expect("Error when parsing ngrams")
+                        .to_string()
+                })
+                .collect();
 
-                slice.into_par_iter().enumerate().for_each(|(pos, key)| {
-                    // Create a write lock
-                    let mut map = guard.write();
-                    map.entry(key).or_insert(Vec::new()).push((line_id, pos));
-                });
-            },
-        );
+            slice.into_par_iter().enumerate().for_each(|(pos, key)| {
+                // Create a write lock
+                let mut map = guard.write();
+                map.entry(key).or_insert(Vec::new()).push((line_id, pos));
+            });
+        },
+    );
 
     let mut ngram_map: InvertedIndex = Arc::try_unwrap(ngram_map_protected)
         .expect("Arc is weak")
@@ -227,7 +231,6 @@ pub(crate) fn generate_inverted_list(doc: &PathBuf, q: usize) -> Result<Inverted
         std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
     });
 
-    trace!("{:?}", ngram_map);
     Ok(ngram_map)
 }
 
@@ -248,7 +251,7 @@ mod tests {
     #[test]
     fn qgram_counter() {
         let testfile: PathBuf = PathBuf::from("./testset/sample_test1.txt".to_string());
-        let result: String = format!("{:?}", generate_inverted_list(&testfile, 2).unwrap());
+        let result: String = format!("{:?}", generate_inverted_index(&testfile, 2).unwrap());
 
         assert_eq!(
             &result,

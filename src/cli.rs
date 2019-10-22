@@ -38,12 +38,14 @@ impl<'a, T> ProgressBarBuilder<'a, T> {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) struct Config {
     pub filepath: PathBuf,
     pub q: usize,
     pub tau: usize,
 }
 
+#[allow(dead_code)]
 fn input_file_validator(f: &str) -> Result<PathBuf> {
     if PathBuf::from(&f).is_file() {
         Ok(PathBuf::from(&f))
@@ -52,6 +54,7 @@ fn input_file_validator(f: &str) -> Result<PathBuf> {
     }
 }
 
+#[allow(dead_code)]
 fn q_validator(v: &str) -> Result<usize> {
     match v.parse::<usize>() {
         Ok(q) if q >= 1 && q <= 10 => Ok(q),
@@ -59,6 +62,7 @@ fn q_validator(v: &str) -> Result<usize> {
     }
 }
 
+#[allow(dead_code)]
 fn tau_validator(v: &str) -> Result<usize> {
     match v.parse::<usize>() {
         Ok(t) if t >= 1 => Ok(t),
@@ -66,6 +70,7 @@ fn tau_validator(v: &str) -> Result<usize> {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn parse_config() -> Result<Config> {
     let matches = App::new("EdJoin")
         .author("Lucius Hu")

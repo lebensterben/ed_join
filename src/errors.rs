@@ -8,7 +8,7 @@ error_chain! {
         Io(std::io::Error)
             #[doc = "A wrapper around `std::io::Error`"];
         Cli(clap::Error)
-            #[doc = "A wrapper around `clap::Error`"];
+            #[doc = "A wrapper around `clap::Error`"] #[cfg(feature = "cli")];
     }
 
     errors {

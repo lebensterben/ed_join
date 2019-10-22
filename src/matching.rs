@@ -1,4 +1,3 @@
-use indicatif::{ParallelProgressIterator, ProgressBar};
 use parking_lot::Mutex;
 use rayon::prelude::*;
 use std::{
@@ -10,7 +9,6 @@ use std::{
     sync::Arc,
 };
 
-use crate::cli::ProgressBarBuilder;
 use crate::errors::*;
 use crate::qgram::*;
 use crate::verification::*;
@@ -30,6 +28,12 @@ The minimum number of edit operations that destroy all q-grams in the given set.
 pub(crate) fn min_edit_errors(qgram_array: &[PosQGram], q: usize) -> usize {
     let mut cnt = 0;
     let mut loc = 0;
+
+    let mut array_clone: Vec<PosQGram> = vec![PosQGram::default(); qgram_array.len()];
+    array_clone[..].clone_from_slice(qgram_array);
+    // qgram_array was sorted in increasing order of frequency by CalcPrefix,
+    // Now sort it according to location
+    array_clone.par_sort_by_key(|qgram| qgram.loc);
 
     qgram_array.iter().for_each(|qgram| {
         if qgram.loc > loc {
@@ -54,15 +58,24 @@ Given a set of q-grams, find the minimum length of prefix such that if all the q
 # Return
 The minimum length of prefix such that if all the q-grams in the prefix are mismatched, it will incur at least `tau + ` edit errors.
  */
-fn calc_prefix_len(qgram_array: &PosQGramArray, q: usize, tau: usize) -> usize {
+fn calc_prefix_len(
+    qgram_array: &mut PosQGramArray,
+    inverted: &InvertedIndex,
+    q: usize,
+    tau: usize,
+) -> usize {
     let mut left: usize = tau + 1;
     let mut right: usize = q * tau + 1;
     let mut mid: usize;
     let mut err: usize;
+    let qgram_len: usize = qgram_array.len();
+
+    // PosQGramArray is sorted in increasing order of location, but we need to sort it in increasing order of frequency
+    qgram_array.par_sort_by_key(|qgram| inverted.get(&qgram.token).unwrap().len());
 
     while left < right {
         mid = (left + right) / 2; // usize automatically floored
-        err = min_edit_errors(&qgram_array[0..min(mid, qgram_array.len())], q);
+        err = min_edit_errors(&mut qgram_array[0..min(mid, qgram_len)], q);
         if err <= tau {
             left = mid + 1;
         } else {
@@ -70,6 +83,7 @@ fn calc_prefix_len(qgram_array: &PosQGramArray, q: usize, tau: usize) -> usize {
         }
     }
     left = std::cmp::min(left, qgram_array.len());
+    #[cfg(feature = "cli")]
     trace!("CalcPrefix for `{}`, length: {}", &qgram_array, &left);
     left
 }
@@ -86,13 +100,14 @@ Given a input file, and two tuning parameters, `q` and `tau`, find all matching 
 # Return
 All matching pairs in the input file.
  */
-pub(crate) fn ed_join(doc: &PathBuf, q: usize, tau: usize) -> Result<()> {
+pub fn ed_join(doc: &PathBuf, q: usize, tau: usize) -> Result<()> {
     let file: File = File::open(doc)?;
     let mut reader: BufReader<File> = BufReader::new(file);
     let mut buffer: String = String::new();
     reader.read_to_string(&mut buffer)?;
     // make it as Vec<Vec<u8>> so we can quickly index it by line id
     let buffer_vec: Vec<Vec<u8>> = buffer.par_lines().map(Vec::from).collect();
+    #[cfg(feature = "cli")]
     trace!(
         "{:?}",
         buffer_vec
@@ -107,7 +122,11 @@ pub(crate) fn ed_join(doc: &PathBuf, q: usize, tau: usize) -> Result<()> {
             doc.file_stem().unwrap().to_str().unwrap(),
             q,
             tau,
-            doc.extension().unwrap().to_str().unwrap()
+            // note that extension may be empty
+            doc.extension()
+                .unwrap_or(std::ffi::OsStr::new("txt"))
+                .to_str()
+                .unwrap()
         )
         .to_string(),
     );
@@ -116,19 +135,33 @@ pub(crate) fn ed_join(doc: &PathBuf, q: usize, tau: usize) -> Result<()> {
     let out_vec_protected: Arc<Mutex<Vec<(ID, Vec<(ID, usize)>)>>> =
         Arc::new(Mutex::new(Vec::new()));
 
-    let inverted_index: InvertedIndex = generate_inverted_list(doc, q)?;
+    let inverted_index: InvertedIndex = generate_inverted_index(doc, q)?;
+    #[cfg(feature = "cli")]
     info!("Inverted Index: {:?}", inverted_index);
 
-    // progress bar
-    let pbar: ProgressBar =
-        ProgressBarBuilder::new(buffer.par_lines().count(), "Generating Candidates").build();
-    buffer_vec.par_iter().enumerate().progress_with(pbar).for_each(|(line_id, line_vec)| {
+    #[cfg(not(feature = "cli"))]
+    let buffer_iter = buffer_vec.par_iter().enumerate();
+    #[cfg(feature = "cli")]
+    let buffer_iter;
+    #[cfg(feature = "cli")]
+    {
+        use crate::cli::ProgressBarBuilder;
+        use indicatif::{ParallelProgressIterator, ProgressBar};
+        // progress bar
+        let pbar: ProgressBar =
+            ProgressBarBuilder::new(buffer.par_lines().count(), "Generating Candidates").build();
+        buffer_iter = buffer_vec.par_iter().enumerate().progress_with(pbar);
+    }
+
+    buffer_iter.for_each(|(line_id, line_vec)| {
         let line: &str = std::str::from_utf8(line_vec).unwrap();
 
         let candidates_protected: Arc<Mutex<HashSet<ID>>> = Arc::new(Mutex::new(HashSet::new()));
-        let qgram_array: PosQGramArray = PosQGramArray::from(line, q);
+        let mut qgram_array: PosQGramArray = PosQGramArray::from(line, q);
 
-        let prefix_len: usize = calc_prefix_len(&qgram_array, q, tau);
+        let prefix_len: usize = calc_prefix_len(&mut qgram_array, &inverted_index, q, tau);
+        #[cfg(feature = "cli")]
+        trace!("Prefix Len: {}", prefix_len);
         qgram_array.par_iter().take(prefix_len).for_each(|qgram| {
             let candidates_clone = candidates_protected.clone();
 
@@ -141,6 +174,7 @@ pub(crate) fn ed_join(doc: &PathBuf, q: usize, tau: usize) -> Result<()> {
                 .filter(|qgram| qgram.0 > line_id)
                 .for_each(|(id, loc)| {
                 let mut candidates_guard = candidates_clone.lock();
+                #[cfg(feature = "cli")]
                 trace!(
                     "x: {} x.id: {} \n I-list of `{}`: {:?} \n y: {} y.id: {} contained: {} \n x.len: {} y.len: {} \n x.loc: {} y.loc: {}",
                     line,
@@ -161,6 +195,7 @@ pub(crate) fn ed_join(doc: &PathBuf, q: usize, tau: usize) -> Result<()> {
                     // position filter
                     && (*loc_x as isize - *loc as isize).abs() <= tau as isize
                 {
+                    #[cfg(feature = "cli")]
                     trace!("insert `{}` for `{}`",
                            line,
                            std::str::from_utf8(&buffer_vec[*id]).unwrap());
@@ -175,6 +210,7 @@ pub(crate) fn ed_join(doc: &PathBuf, q: usize, tau: usize) -> Result<()> {
             .par_iter()
             .collect();
 
+        #[cfg(feature = "cli")]
         info!("Candidate of `{}`: {:?}", line, candidates);
 
         let out_vec_clone = out_vec_protected.clone();

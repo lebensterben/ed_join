@@ -1,10 +1,8 @@
 use edit_distance::edit_distance;
-use indicatif::{ParallelProgressIterator, ProgressBar};
 use parking_lot::Mutex;
 use rayon::prelude::*;
 use std::{collections::HashMap, sync::Arc};
 
-use crate::cli::ProgressBarBuilder;
 use crate::matching::min_edit_errors;
 use crate::qgram::*;
 
@@ -41,9 +39,9 @@ fn compare_qgrams(
                       j: usize,
                       epsilon: &mut usize,
                       loose_mismatch: &mut PosQGramArray| {
-        if (*i > 1) && (x[*i].token != x[*i - 1].token)
-            || (j > 1) && (x[*i].token != y[j - 1].token)
-            || (j > 1) && ((x[*i].loc as isize - y[j - 1].loc as isize).abs() > tau as isize)
+        if ((*i >= 1) && (x[*i].token != x[*i - 1].token))
+            || ((j >= 1) && (x[*i].token != y[j - 1].token))
+            || ((j >= 1) && ((x[*i].loc as isize - y[j - 1].loc as isize).abs() > tau as isize))
         {
             loose_mismatch.push(x[*i].clone());
         }
@@ -53,17 +51,17 @@ fn compare_qgrams(
 
     while i < x.len() && j < y.len() {
         if x[i].token == y[j].token {
-            if x[i].loc - y[j].loc <= tau {
+            if (x[i].loc as isize - y[j].loc as isize).abs() <= tau as isize {
                 i += 1;
                 j += 1;
-            } else if x[i].loc < y[i].loc {
+            } else if x[i].loc < y[j].loc {
                 comparator(x, y, &mut i, j, &mut epsilon, &mut loose_mismatch);
             } else {
                 j += 1;
             }
-        } else if invert.get(&x[i].token).unwrap().len() < invert.get(&y[j].token).unwrap().len()
-            || (invert.get(&x[i].token).unwrap().len() == invert.get(&y[j].token).unwrap().len())
-                & (x[i].token.as_bytes() < y[j].token.as_bytes())
+        } else if (invert.get(&x[i].token).unwrap().len() < invert.get(&y[j].token).unwrap().len())
+            || ((invert.get(&x[i].token).unwrap().len() == invert.get(&y[j].token).unwrap().len())
+                & ((x[i].token.as_bytes()) < (y[j].token.as_bytes())))
         {
             comparator(x, y, &mut i, j, &mut epsilon, &mut loose_mismatch);
         } else {
@@ -248,102 +246,118 @@ pub(crate) fn verify(
         .map(|id| (*id, std::str::from_utf8(&buffer[**id]).unwrap()))
         .collect();
     let mut x = PosQGramArray::from(line, q);
-    // PosQGramArray is only sorted in increasing order of location, now sort it in decreasing order of frequency
+    // PosQGramArray is only sorted in increasing order of location, now sort it in increasing order of frequency
     x.par_sort_by_key(|qgram| inverted.clone().entry(qgram.token.to_string()).index());
     let out_protected: Arc<Mutex<Vec<(ID, usize)>>> = Arc::new(Mutex::new(Vec::new()));
 
-    // progress bar
-    let pbar: ProgressBar =
-        ProgressBarBuilder::new(candidates.len(), "Verifying Candidates").build();
+    #[cfg(not(feature = "cli"))]
+    let candidates_iter = candidates.par_iter();
+    #[cfg(feature = "cli")]
+    let candidates_iter;
+    #[cfg(feature = "cli")]
+    {
+        use crate::cli::ProgressBarBuilder;
+        use indicatif::{ParallelProgressIterator, ProgressBar};
+        // progress bar
+        let pbar: ProgressBar =
+            ProgressBarBuilder::new(candidates.len(), "Verifying Candidates").build();
+        candidates_iter = candidates.par_iter().progress_with(pbar);
+    }
 
-    candidates
-        .par_iter()
-        .progress_with(pbar)
-        .for_each(|(id, candidate)| {
-            trace!("Match `{}` against `{}`", line, candidate);
+    candidates_iter.for_each(|(id, candidate)| {
+        #[cfg(feature = "cli")]
+        trace!("Match `{}` against `{}`", line, candidate);
 
-            let out_clone = out_protected.clone();
-            let mut y = PosQGramArray::from(candidate, q);
-            // PosQGramArray is only sorted in increasing order of location, now sort it in decreasing order of frequency
-            y.par_sort_by_key(|qgram| inverted.clone().entry(qgram.token.to_string()).index());
+        let out_clone = out_protected.clone();
+        let mut y = PosQGramArray::from(candidate, q);
+        // PosQGramArray is only sorted in increasing order of location, now sort it in increasing order of frequency
+        y.par_sort_by_key(|qgram| inverted.clone().entry(qgram.token.to_string()).index());
 
-            trace!("x: {}", x);
-            trace!("y: {}", y);
-            let (mut loose_mismatch, epsilon_1) = compare_qgrams(&x, &y, &inverted, q);
+        let (mut loose_mismatch, epsilon_1) = compare_qgrams(&x, &y, &inverted, q);
+        #[cfg(feature = "cli")]
+        trace!(
+            "x: {}\n y: {}\n Loosely-Mismatch: {}\n # of Strongly Mismatch: {}",
+            x,
+            y,
+            loose_mismatch,
+            epsilon_1
+        );
+
+        // count filtering
+        #[cfg(feature = "cli")]
+        trace!(
+            "Count filtering on {}: epsilon_1 = {}",
+            candidate,
+            epsilon_1
+        );
+        if epsilon_1 <= q * tau {
+            // loose_mismatch is a PosQGramArray, which is generated from &x, &y, who were sorted in increasing order of frequency
+            // now sort it in increasing order of location
+            loose_mismatch.par_sort_by_key(|qgram| qgram.loc);
+            let epsilon_2 = min_edit_errors(&loose_mismatch, q);
+
+            // location-based filtering
+            #[cfg(feature = "cli")]
             trace!(
-                "Loosely-Mismatch: {}\n # of Strongly Mismatch: {}",
-                loose_mismatch,
-                epsilon_1
-            );
-
-            // count filtering
-            trace!(
-                "Count filtering on {}: epsilon_1 = {}",
+                "Location-based filtering on {}: epsilon_2 = {}",
                 candidate,
-                epsilon_1
+                epsilon_2
             );
-            if epsilon_1 <= q * tau {
-                let epsilon_2 = min_edit_errors(&loose_mismatch, q);
+            if epsilon_2 <= tau {
+                if let Some(right_error) = sum_right_errors(&mut loose_mismatch, q) {
+                    let suffix_sum_array: SuffixSumArray = right_error;
+                    #[cfg(feature = "cli")]
+                    trace!("Suffix Sum Array: {:?}", suffix_sum_array);
+                    let epsilon_3 =
+                        content_filter(line, candidate, loose_mismatch, suffix_sum_array, q, tau);
 
-                // location-based filtering
-                trace!(
-                    "Location-based filtering on {}: epsilon_2 = {}",
-                    candidate,
-                    epsilon_2
-                );
-                if epsilon_2 <= tau {
-                    if let Some(right_error) = sum_right_errors(&mut loose_mismatch, q) {
-                        let suffix_sum_array: SuffixSumArray = right_error;
-                        trace!("Suffix Sum Array: {:?}", suffix_sum_array);
-                        let epsilon_3 = content_filter(
-                            line,
+                    // content-based filtering
+                    if let Some(v) = epsilon_3 {
+                        #[cfg(feature = "cli")]
+                        trace!(
+                            "Content-based filtering on {}: epsilon_3 = {}",
                             candidate,
-                            loose_mismatch,
-                            suffix_sum_array,
-                            q,
-                            tau,
+                            v,
                         );
-
-                        // content-based filtering
-                        if let Some(v) = epsilon_3 {
-                            trace!(
-                                "Content-based filtering on {}: epsilon_3 = {}",
-                                candidate,
-                                v,
-                            );
-                            // NOTE: I believe author made a mistake here
-                            if v <= tau {
-                                let ed: usize = edit_distance(&line, candidate);
-                                trace!("Ed of `{}` against `{}`", line, candidate);
-                                if ed <= tau {
-                                    trace!("Add `{}` to matched set of `{}`", candidate, &line);
-                                    let mut out_guard = out_clone.lock();
-                                    out_guard.push((**id, ed));
-                                }
-                            }
-                        } else {
-                            // when mismatch is empty, cannot apply content filter, go to this branch
+                        // NOTE: I believe author made a mistake here
+                        if v <= tau {
                             let ed: usize = edit_distance(&line, candidate);
+                            #[cfg(feature = "cli")]
                             trace!("Ed of `{}` against `{}`", line, candidate);
                             if ed <= tau {
+                                #[cfg(feature = "cli")]
                                 trace!("Add `{}` to matched set of `{}`", candidate, &line);
                                 let mut out_guard = out_clone.lock();
                                 out_guard.push((**id, ed));
                             }
                         }
                     } else {
-                        // when mismatch is empty, sum_right_errors is empty, go to this branch
+                        // when mismatch is empty, cannot apply content filter, go to this branch
                         let ed: usize = edit_distance(&line, candidate);
+                        #[cfg(feature = "cli")]
                         trace!("Ed of `{}` against `{}`", line, candidate);
                         if ed <= tau {
+                            #[cfg(feature = "cli")]
                             trace!("Add `{}` to matched set of `{}`", candidate, &line);
                             let mut out_guard = out_clone.lock();
                             out_guard.push((**id, ed));
                         }
                     }
+                } else {
+                    // when mismatch is empty, sum_right_errors is empty, go to this branch
+                    let ed: usize = edit_distance(&line, candidate);
+                    #[cfg(feature = "cli")]
+                    trace!("Ed of `{}` against `{}`", line, candidate);
+                    if ed <= tau {
+                        #[cfg(feature = "cli")]
+                        trace!("Add `{}` to matched set of `{}`", candidate, &line);
+                        let mut out_guard = out_clone.lock();
+                        out_guard.push((**id, ed));
+                    }
                 }
             }
-        });
+        }
+    });
 
     let mut out: Vec<(ID, usize)> = Arc::try_unwrap(out_protected)
         .expect("Arc is weak")
