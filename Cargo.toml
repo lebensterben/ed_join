@@ -2,13 +2,18 @@
 name = "ed_join"
 version = "1.0.0"
 authors = ["Lucius Hu <lebensterben@users.noreply.github.com>"]
-edition = "2018"
-description = "A Rust Implemtation of Ed-Join Algorithm for string similarity join"
+license = "Apache-2.0 OR MIT"
+readme = "README.md"
 repository = "https://github.com/lebensterben/ed_join"
 documentation = "https://notatall.io/ed_join/ed_join/index.html"
+homepage = "https://crates.io/crates/ed_join"
+description = """
+A Rust Implemtation of Ed-Join Algorithm for string similarity join
+"""
 keywords = ["string", "similarity", "text-processing", "algorithm"]
 categories = ["algorithms", "text-processing"]
-license = "Apache-2.0 AND MIT"
+exclude = ["/.travis.yml", "/.gitignore"]
+edition = "2018"
 
 [badges]
 travis-ci = { repository = "lebensterben/ed_join" }
@@ -27,6 +32,7 @@ error-chain = "0.12.1"
 parking_lot = "0.9.0"
 rayon = "1.2.0"
 
+# optional dependencies
 clap = { version = "2.33.0", optional = true }
 dialoguer = { version = "0.4.0", optional = true }
 env_logger = { version = "0.7.0", optional = true }
@@ -40,3 +46,6 @@ features = ["rayon"]
 version = "0.12.0"
 features = ["with_rayon"]
 optional = true
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--document-private-items"]
