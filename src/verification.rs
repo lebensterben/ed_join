@@ -176,8 +176,8 @@ Content-based mismatch filtering by combining L1-distance and minimum edit error
 A lower bound of the edit distance from `s` to `t`.
  */
 fn content_filter(
-    s: &str,
-    t: &str,
+    from: &str,
+    to: &str,
     mismatch: PosQGramArray,
     suffix_sum: SuffixSumArray,
     q: usize,
@@ -201,7 +201,7 @@ fn content_filter(
     if mismatch.len() >= 2 {
         while i < mismatch.len() {
             if mismatch[i].loc - mismatch[i - 1].loc > 1 {
-                epsilon = epsi(s, t, &mismatch, q, i, j);
+                epsilon = epsi(from, to, &mismatch, q, i, j);
                 if epsilon > tau {
                     return Some(2 * tau + 1);
                 }
@@ -210,7 +210,7 @@ fn content_filter(
             i += 1;
         }
 
-        let epsilon = epsi(s, t, &mismatch, q, i, j);
+        let epsilon = epsi(from, to, &mismatch, q, i, j);
         Some(epsilon)
     } else {
         None
@@ -234,7 +234,7 @@ Return only verified matched paris from the candidates set.
  */
 pub(crate) fn verify(
     line_id: ID,
-    candidates_id: &Vec<&ID>,
+    candidates_id: Vec<&ID>,
     buffer: Vec<Vec<u8>>,
     inverted: &InvertedIndex,
     q: usize,
@@ -250,21 +250,7 @@ pub(crate) fn verify(
     x.par_sort_by_key(|qgram| inverted.clone().entry(qgram.token.to_string()).index());
     let out_protected: Arc<Mutex<Vec<(ID, usize)>>> = Arc::new(Mutex::new(Vec::new()));
 
-    #[cfg(not(feature = "cli"))]
-    let candidates_iter = candidates.par_iter();
-    #[cfg(feature = "cli")]
-    let candidates_iter;
-    #[cfg(feature = "cli")]
-    {
-        use crate::cli::ProgressBarBuilder;
-        use indicatif::{ParallelProgressIterator, ProgressBar};
-        // progress bar
-        let pbar: ProgressBar =
-            ProgressBarBuilder::new(candidates.len(), "Verifying Candidates").build();
-        candidates_iter = candidates.par_iter().progress_with(pbar);
-    }
-
-    candidates_iter.for_each(|(id, candidate)| {
+    candidates.par_iter().for_each(|(id, candidate)| {
         #[cfg(feature = "cli")]
         trace!("Match `{}` against `{}`", line, candidate);
 

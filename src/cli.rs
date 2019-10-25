@@ -1,25 +1,20 @@
 use clap::App;
 use dialoguer::{theme::ColorfulTheme, Confirmation, Input};
 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
-use std::{marker::PhantomData, path::PathBuf};
+use std::path::PathBuf;
 
 use crate::errors::*;
 
-pub(crate) struct ProgressBarBuilder<'a, T> {
+pub(crate) struct ProgressBarBuilder<'a> {
     count: u64,
     messege: &'a str,
-    phantom: PhantomData<T>,
 }
 
-impl<'a, T> ProgressBarBuilder<'a, T> {
-    pub fn new(count: T, messege: &'a str) -> Self
-    where
-        T: std::convert::TryInto<u64> + std::fmt::Debug,
-    {
+impl<'a> ProgressBarBuilder<'a> {
+    pub fn new(count: usize, messege: &'a str) -> Self {
         Self {
-            count: count.try_into().ok().unwrap(),
+            count: count as u64,
             messege,
-            phantom: PhantomData,
         }
     }
 

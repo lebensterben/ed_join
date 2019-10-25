@@ -13,6 +13,11 @@ use crate::errors::*;
 use crate::qgram::*;
 use crate::verification::*;
 
+#[cfg(feature = "cli")]
+use crate::cli::ProgressBarBuilder;
+#[cfg(feature = "cli")]
+use indicatif::{ParallelProgressIterator, ProgressBar};
+
 // Algorithm 2
 // NOTE: PosQGram is not by default sorted in increasing frequency
 /**
@@ -75,7 +80,7 @@ fn calc_prefix_len(
 
     while left < right {
         mid = (left + right) / 2; // usize automatically floored
-        err = min_edit_errors(&mut qgram_array[0..min(mid, qgram_len)], q);
+        err = min_edit_errors(&qgram_array[0..min(mid, qgram_len)], q);
         if err <= tau {
             left = mid + 1;
         } else {
@@ -124,7 +129,7 @@ pub fn ed_join(doc: &PathBuf, q: usize, tau: usize) -> Result<()> {
             tau,
             // note that extension may be empty
             doc.extension()
-                .unwrap_or(std::ffi::OsStr::new("txt"))
+                .unwrap_or_else(|| std::ffi::OsStr::new("txt"))
                 .to_str()
                 .unwrap()
         )
@@ -145,11 +150,9 @@ pub fn ed_join(doc: &PathBuf, q: usize, tau: usize) -> Result<()> {
     let buffer_iter;
     #[cfg(feature = "cli")]
     {
-        use crate::cli::ProgressBarBuilder;
-        use indicatif::{ParallelProgressIterator, ProgressBar};
         // progress bar
         let pbar: ProgressBar =
-            ProgressBarBuilder::new(buffer.par_lines().count(), "Generating Candidates").build();
+            ProgressBarBuilder::new(buffer.par_lines().count(), "Processing").build();
         buffer_iter = buffer_vec.par_iter().enumerate().progress_with(pbar);
     }
 
@@ -215,7 +218,7 @@ pub fn ed_join(doc: &PathBuf, q: usize, tau: usize) -> Result<()> {
 
         let out_vec_clone = out_vec_protected.clone();
 
-        if let Some(v) = verify(line_id, &candidates, buffer_vec.clone(), &inverted_index, q, tau) {
+        if let Some(v) = verify(line_id, candidates, buffer_vec.clone(), &inverted_index, q, tau) {
             let mut out_vec_guard = out_vec_clone.lock();
             out_vec_guard.push(v);
         };

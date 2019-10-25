@@ -175,21 +175,7 @@ pub(crate) fn generate_inverted_index(doc: &PathBuf, q: usize) -> Result<Inverte
         // Convert the buffer into a Vec<Vec<u8>> so we can use enumerate on the file
         .collect();
 
-    #[cfg(not(feature = "cli"))]
-    let buffer_iter = buffer_vec.par_iter().enumerate();
-    #[cfg(feature = "cli")]
-    let buffer_iter;
-    #[cfg(feature = "cli")]
-    {
-        use crate::cli::ProgressBarBuilder;
-        use indicatif::{ParallelProgressIterator, ProgressBar};
-        // progress bar
-        let pbar: ProgressBar =
-            ProgressBarBuilder::new(buffer.par_lines().count(), "Making InvertedIndex").build();
-        buffer_iter = buffer_vec.par_iter().enumerate().progress_with(pbar);
-    }
-
-    buffer_iter.for_each(
+    buffer_vec.par_iter().enumerate().for_each(
         // Though each line is Vec<u8> type, enumerate() returns it as a slice of u8
         |(line_id, line_content)| {
             // Make a clone and the references count will increase by 1
