@@ -29,6 +29,11 @@
 <span id="29">29</span>
 <span id="30">30</span>
 <span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="macro">error_chain</span><span class="macro">!</span> {
 
@@ -46,17 +51,22 @@
     <span class="ident">errors</span> {
         <span class="ident">InputFileNotReadable</span>(<span class="ident">f</span>: <span class="ident">String</span>) {
             <span class="ident">description</span>(<span class="string">&quot;invalid input file&quot;</span>),
-            <span class="ident">display</span>(<span class="string">&quot;input file not found/readable: &#39;filepath == {}&#39;&quot;</span>, <span class="ident">f</span>)
+            <span class="ident">display</span>(<span class="string">&quot;input file not found/readable: &#39;filepath = {}&#39;&quot;</span>, <span class="ident">f</span>)
         }
 
-        <span class="ident">InvalidParameterQ</span>(<span class="ident">t</span>: <span class="ident">String</span>) {
-            <span class="ident">description</span>(<span class="string">&quot;invalid parameter&quot;</span>),
-            <span class="ident">display</span>(<span class="string">&quot;q should be an integer, and 1 &lt;= q &lt;= 10: &#39;q == {}&#39;&quot;</span>, <span class="ident">t</span>)
+        <span class="ident">QTooSmall</span>(<span class="ident">q</span>: <span class="ident">usize</span>) {
+            <span class="ident">description</span>(<span class="string">&quot;q is too small&quot;</span>),
+            <span class="ident">display</span>(<span class="string">&quot;q should be an integer, and q &gt;= 1 : &#39;q = {}&#39;&quot;</span>, <span class="ident">q</span>)
         }
 
-        <span class="ident">InvalidParameterTau</span>(<span class="ident">t</span>: <span class="ident">String</span>) {
-            <span class="ident">description</span>(<span class="string">&quot;invalid parameter&quot;</span>),
-            <span class="ident">display</span>(<span class="string">&quot;tau should be an integer, and tau &gt;= 1: &#39;tau == {}&#39;&quot;</span>, <span class="ident">t</span>)
+        <span class="ident">QTooLarge</span>(<span class="ident">q</span>: <span class="ident">usize</span>, <span class="ident">min_line_len</span>: <span class="ident">usize</span>) {
+            <span class="ident">description</span>(<span class="string">&quot;q is to large&quot;</span>),
+            <span class="ident">display</span>(<span class="string">&quot;q cannot excess the length of records: &#39;q = {} &gt; {}&#39;&quot;</span>, <span class="ident">q</span>, <span class="ident">min_line_len</span>)
+        }
+
+        <span class="ident">TauTooSmall</span>(<span class="ident">t</span>: <span class="ident">usize</span>) {
+            <span class="ident">description</span>(<span class="string">&quot;tau is to small&quot;</span>),
+            <span class="ident">display</span>(<span class="string">&quot;tau should be an integer, and tau &gt;= 1: &#39;tau = {}&#39;&quot;</span>, <span class="ident">t</span>)
         }
 
     }

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["BitPacker4x","`BitPacker4x` packs integers in groups of 4. This gives an opportunity to leverage `SSE3` instructions to encode and decode the stream."]],"trait":[["BitPacker","Examples without delta-encoding ``` extern crate bitpacking;"]]});

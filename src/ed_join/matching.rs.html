@@ -236,21 +236,86 @@
 <span id="236">236</span>
 <span id="237">237</span>
 <span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="kw">use</span> <span class="ident">parking_lot</span>::<span class="ident">Mutex</span>;
+<span class="kw">use</span> <span class="ident">crossbeam_channel</span>::<span class="ident">unbounded</span>;
 <span class="kw">use</span> <span class="ident">rayon</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">cmp</span>::<span class="ident">min</span>,
-    <span class="ident">collections</span>::<span class="ident">HashSet</span>,
     <span class="ident">fs</span>::<span class="ident">File</span>,
     <span class="ident">io</span>::{<span class="ident">prelude</span>::<span class="kw-2">*</span>, <span class="ident">BufReader</span>, <span class="ident">BufWriter</span>},
     <span class="ident">path</span>::<span class="ident">PathBuf</span>,
-    <span class="ident">sync</span>::<span class="ident">Arc</span>,
 };
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">errors</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">qgram</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">verification</span>::<span class="kw-2">*</span>;
+
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">cli</span>::<span class="ident">ProgressBarBuilder</span>;
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
+<span class="kw">use</span> <span class="ident">indicatif</span>::{<span class="ident">ParallelProgressIterator</span>, <span class="ident">ProgressBar</span>};
 
 <span class="comment">// Algorithm 2</span>
 <span class="comment">// NOTE: PosQGram is not by default sorted in increasing frequency</span>
@@ -264,15 +329,16 @@ Given a set of q-grams, find the minimum number of edit operations that destroys
 # Return
 The minimum number of edit operations that destroy all q-grams in the given set.
  */</span>
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">min_edit_errors</span>(<span class="ident">qgram_array</span>: <span class="kw-2">&amp;</span>[<span class="ident">PosQGram</span>], <span class="ident">q</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">min_edit_errors</span>(<span class="ident">qgram_array</span>: <span class="kw-2">&amp;</span>[<span class="ident">PosQGram</span>], <span class="ident">q</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cnt</span> <span class="op">=</span> <span class="number">0</span>;
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">loc</span> <span class="op">=</span> <span class="number">0</span>;
 
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">array_clone</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PosQGram</span><span class="op">&gt;</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[<span class="ident">PosQGram</span>::<span class="ident">default</span>(); <span class="ident">qgram_array</span>.<span class="ident">len</span>()];
     <span class="ident">array_clone</span>[..].<span class="ident">clone_from_slice</span>(<span class="ident">qgram_array</span>);
-    <span class="comment">// qgram_array was sorted in increasing order of frequency by CalcPrefix,</span>
+
+    <span class="comment">// qgram_array was sorted in increasing order before calling CalcPrefix,</span>
     <span class="comment">// Now sort it according to location</span>
-    <span class="ident">array_clone</span>.<span class="ident">par_sort_by_key</span>(<span class="op">|</span><span class="ident">qgram</span><span class="op">|</span> <span class="ident">qgram</span>.<span class="ident">loc</span>);
+    <span class="ident">array_clone</span>.<span class="ident">par_sort_unstable_by_key</span>(<span class="op">|</span><span class="ident">qgram</span><span class="op">|</span> <span class="ident">qgram</span>.<span class="ident">loc</span>);
 
     <span class="ident">qgram_array</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">qgram</span><span class="op">|</span> {
         <span class="kw">if</span> <span class="ident">qgram</span>.<span class="ident">loc</span> <span class="op">&gt;</span> <span class="ident">loc</span> {
@@ -285,7 +351,6 @@ The minimum number of edit operations that destroy all q-grams in the given set.
 }
 
 <span class="comment">// Algorithm 3</span>
-<span class="comment">// NOTE: PosQGram is not by default sorted in increasing frequency</span>
 <span class="doccomment">/**
 Given a set of q-grams, find the minimum length of prefix such that if all the q-grams in the prefix are mismatched, it will incur at least `tau + ` edit errors.
 
@@ -297,24 +362,16 @@ Given a set of q-grams, find the minimum length of prefix such that if all the q
 # Return
 The minimum length of prefix such that if all the q-grams in the prefix are mismatched, it will incur at least `tau + ` edit errors.
  */</span>
-<span class="kw">fn</span> <span class="ident">calc_prefix_len</span>(
-    <span class="ident">qgram_array</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">PosQGramArray</span>,
-    <span class="ident">inverted</span>: <span class="kw-2">&amp;</span><span class="ident">InvertedIndex</span>,
-    <span class="ident">q</span>: <span class="ident">usize</span>,
-    <span class="ident">tau</span>: <span class="ident">usize</span>,
-) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">calc_prefix_len</span>(<span class="ident">qgram_array</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">PosQGramArray</span>, <span class="ident">q</span>: <span class="ident">usize</span>, <span class="ident">tau</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">tau</span> <span class="op">+</span> <span class="number">1</span>;
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">right</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">q</span> <span class="op">*</span> <span class="ident">tau</span> <span class="op">+</span> <span class="number">1</span>;
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">mid</span>: <span class="ident">usize</span>;
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">err</span>: <span class="ident">usize</span>;
     <span class="kw">let</span> <span class="ident">qgram_len</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">qgram_array</span>.<span class="ident">len</span>();
 
-    <span class="comment">// PosQGramArray is sorted in increasing order of location, but we need to sort it in increasing order of frequency</span>
-    <span class="ident">qgram_array</span>.<span class="ident">par_sort_by_key</span>(<span class="op">|</span><span class="ident">qgram</span><span class="op">|</span> <span class="ident">inverted</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">qgram</span>.<span class="ident">token</span>).<span class="ident">unwrap</span>().<span class="ident">len</span>());
-
     <span class="kw">while</span> <span class="ident">left</span> <span class="op">&lt;</span> <span class="ident">right</span> {
         <span class="ident">mid</span> <span class="op">=</span> (<span class="ident">left</span> <span class="op">+</span> <span class="ident">right</span>) <span class="op">/</span> <span class="number">2</span>; <span class="comment">// usize automatically floored</span>
-        <span class="ident">err</span> <span class="op">=</span> <span class="ident">min_edit_errors</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">qgram_array</span>[<span class="number">0</span>..<span class="ident">min</span>(<span class="ident">mid</span>, <span class="ident">qgram_len</span>)], <span class="ident">q</span>);
+        <span class="ident">err</span> <span class="op">=</span> <span class="ident">min_edit_errors</span>(<span class="kw-2">&amp;</span><span class="ident">qgram_array</span>[<span class="number">0</span>..<span class="ident">min</span>(<span class="ident">mid</span>, <span class="ident">qgram_len</span>)], <span class="ident">q</span>);
         <span class="kw">if</span> <span class="ident">err</span> <span class="op">&lt;</span><span class="op">=</span> <span class="ident">tau</span> {
             <span class="ident">left</span> <span class="op">=</span> <span class="ident">mid</span> <span class="op">+</span> <span class="number">1</span>;
         } <span class="kw">else</span> {
@@ -323,47 +380,48 @@ The minimum length of prefix such that if all the q-grams in the prefix are mism
     }
     <span class="ident">left</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">cmp</span>::<span class="ident">min</span>(<span class="ident">left</span>, <span class="ident">qgram_array</span>.<span class="ident">len</span>());
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
-    <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;CalcPrefix for `{}`, length: {}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">qgram_array</span>, <span class="kw-2">&amp;</span><span class="ident">left</span>);
+    <span class="macro">trace</span><span class="macro">!</span>(
+        <span class="string">&quot;CalcPrefix for `{}`: prefix length = {}&quot;</span>,
+        <span class="kw-2">&amp;</span><span class="ident">qgram_array</span>,
+        <span class="kw-2">&amp;</span><span class="ident">left</span>
+    );
     <span class="ident">left</span>
 }
 
 <span class="comment">// Algorithm 1</span>
 <span class="doccomment">/**
-Given a input file, and two tuning parameters, `q` and `tau`, find all matching pairs in the input file.
+Given two input files, `doc_x` and `doc_y`, and two parameters, `q` and `tau`, find all records in `doc_y` that match records in `doc_x` such that are matched pairs have edit-distance smaller or equal to `tau`.
 
 # Parameters
- * `doc`: A path to a input file.
- * `q`: A positive integer as the tuning parameter for length of q-grams.
+ * `doc_x` and `doc_y`: Paths to a input files, in which we process each record in `doc_x` and looking for valid matches in `doc_y`
+ * `q`: A positive integer as the tuning parameter for length of q-grams. Large `q` reduces the amount of tokens in pre-matching, but makes filtering less effective. Small `q` generates large amount of tokens for filtering, the output of filtering are more likely to be valid matches, but this prolongs the time on filtering.
  * `tau`: A positive integer as the tuning parameter for threshold for matching.
 
 # Return
-All matching pairs in the input file.
+All matching pairs. This would be stored in a output file automatically under the same directory of the first input file.
  */</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ed_join</span>(<span class="ident">doc</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>, <span class="ident">q</span>: <span class="ident">usize</span>, <span class="ident">tau</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">file</span>: <span class="ident">File</span> <span class="op">=</span> <span class="ident">File</span>::<span class="ident">open</span>(<span class="ident">doc</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader</span>: <span class="ident">BufReader</span><span class="op">&lt;</span><span class="ident">File</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">BufReader</span>::<span class="ident">new</span>(<span class="ident">file</span>);
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buffer</span>: <span class="ident">String</span> <span class="op">=</span> <span class="ident">String</span>::<span class="ident">new</span>();
-    <span class="ident">reader</span>.<span class="ident">read_to_string</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buffer</span>)<span class="question-mark">?</span>;
-    <span class="comment">// make it as Vec&lt;Vec&lt;u8&gt;&gt; so we can quickly index it by line id</span>
-    <span class="kw">let</span> <span class="ident">buffer_vec</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">buffer</span>.<span class="ident">par_lines</span>().<span class="ident">map</span>(<span class="ident">Vec</span>::<span class="ident">from</span>).<span class="ident">collect</span>();
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
-    <span class="macro">trace</span><span class="macro">!</span>(
-        <span class="string">&quot;{:?}&quot;</span>,
-        <span class="ident">buffer_vec</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="ident">x</span>).<span class="ident">unwrap</span>().<span class="ident">to_string</span>())
-            .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">&gt;</span>()
-    );
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ed_join</span>(<span class="ident">doc_x</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>, <span class="ident">doc_y</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>, <span class="ident">q</span>: <span class="ident">usize</span>, <span class="ident">tau</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="comment">// `doc_x` is read by a BufReader, line by line</span>
+    <span class="kw">let</span> <span class="ident">file_x</span>: <span class="ident">File</span> <span class="op">=</span> <span class="ident">File</span>::<span class="ident">open</span>(<span class="ident">doc_x</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">reader_x</span>: <span class="ident">BufReader</span><span class="op">&lt;</span><span class="ident">File</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">BufReader</span>::<span class="ident">new</span>(<span class="ident">file_x</span>);
+
+    <span class="comment">// Read entire `doc_y` into a vector to reduce IO</span>
+    <span class="kw">let</span> <span class="ident">file_y</span>: <span class="ident">File</span> <span class="op">=</span> <span class="ident">File</span>::<span class="ident">open</span>(<span class="ident">doc_x</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">reader_y</span>: <span class="ident">BufReader</span><span class="op">&lt;</span><span class="ident">File</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">BufReader</span>::<span class="ident">new</span>(<span class="ident">file_y</span>);
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">y_buffer</span>: <span class="ident">String</span> <span class="op">=</span> <span class="ident">String</span>::<span class="ident">new</span>();
+    <span class="ident">reader_y</span>.<span class="ident">read_to_string</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">y_buffer</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">y_vec</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">y_buffer</span>.<span class="ident">par_lines</span>().<span class="ident">map</span>(<span class="ident">Vec</span>::<span class="ident">from</span>).<span class="ident">collect</span>();
 
     <span class="kw">let</span> <span class="ident">out_name</span>: <span class="ident">PathBuf</span> <span class="op">=</span> <span class="ident">PathBuf</span>::<span class="ident">from</span>(
         <span class="macro">format</span><span class="macro">!</span>(
             <span class="string">&quot;{}_out_q{}_tau{}.{}&quot;</span>,
-            <span class="ident">doc</span>.<span class="ident">file_stem</span>().<span class="ident">unwrap</span>().<span class="ident">to_str</span>().<span class="ident">unwrap</span>(),
+            <span class="ident">doc_x</span>.<span class="ident">file_stem</span>().<span class="ident">unwrap</span>().<span class="ident">to_str</span>().<span class="ident">unwrap</span>(),
             <span class="ident">q</span>,
             <span class="ident">tau</span>,
             <span class="comment">// note that extension may be empty</span>
-            <span class="ident">doc</span>.<span class="ident">extension</span>()
-                .<span class="ident">unwrap_or</span>(<span class="ident">std</span>::<span class="ident">ffi</span>::<span class="ident">OsStr</span>::<span class="ident">new</span>(<span class="string">&quot;txt&quot;</span>))
+            <span class="ident">doc_x</span>
+                .<span class="ident">extension</span>()
+                .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">std</span>::<span class="ident">ffi</span>::<span class="ident">OsStr</span>::<span class="ident">new</span>(<span class="string">&quot;txt&quot;</span>))
                 .<span class="ident">to_str</span>()
                 .<span class="ident">unwrap</span>()
         )
@@ -371,101 +429,131 @@ All matching pairs in the input file.
     );
     <span class="kw">let</span> <span class="ident">doc_out</span>: <span class="ident">File</span> <span class="op">=</span> <span class="ident">File</span>::<span class="ident">create</span>(<span class="kw-2">&amp;</span><span class="ident">out_name</span>).<span class="ident">expect</span>(<span class="string">&quot;Failed to Create File&quot;</span>);
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">writer</span>: <span class="ident">BufWriter</span><span class="op">&lt;</span><span class="ident">File</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">BufWriter</span>::<span class="ident">new</span>(<span class="ident">doc_out</span>);
-    <span class="kw">let</span> <span class="ident">out_vec_protected</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span>
-        <span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">Mutex</span>::<span class="ident">new</span>(<span class="ident">Vec</span>::<span class="ident">new</span>()));
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">output_vec</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">new</span>();
+    <span class="kw">let</span> (<span class="ident">output_s</span>, <span class="ident">output_r</span>) <span class="op">=</span> <span class="ident">unbounded</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span>();
 
-    <span class="kw">let</span> <span class="ident">inverted_index</span>: <span class="ident">InvertedIndex</span> <span class="op">=</span> <span class="ident">generate_inverted_index</span>(<span class="ident">doc</span>, <span class="ident">q</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">inverted_index</span>: <span class="ident">InvertedIndex</span> <span class="op">=</span> <span class="ident">generate_inverted_index</span>(<span class="ident">doc_x</span>, <span class="ident">doc_y</span>, <span class="ident">q</span>)<span class="question-mark">?</span>;
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
-    <span class="macro">info</span><span class="macro">!</span>(<span class="string">&quot;Inverted Index: {:?}&quot;</span>, <span class="ident">inverted_index</span>);
+    <span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;InvertedList: {:?}&quot;</span>, <span class="kw-2">&amp;</span><span class="ident">inverted_index</span>);
 
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>))]</span>
-    <span class="kw">let</span> <span class="ident">buffer_iter</span> <span class="op">=</span> <span class="ident">buffer_vec</span>.<span class="ident">par_iter</span>().<span class="ident">enumerate</span>();
+    <span class="kw">let</span> <span class="ident">file_x_iter</span> <span class="op">=</span> <span class="ident">reader_x</span>.<span class="ident">lines</span>().<span class="ident">enumerate</span>().<span class="ident">par_bridge</span>();
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
-    <span class="kw">let</span> <span class="ident">buffer_iter</span>;
+    <span class="kw">let</span> <span class="ident">file_x_iter</span>;
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
     {
-        <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">cli</span>::<span class="ident">ProgressBarBuilder</span>;
-        <span class="kw">use</span> <span class="ident">indicatif</span>::{<span class="ident">ParallelProgressIterator</span>, <span class="ident">ProgressBar</span>};
         <span class="comment">// progress bar</span>
-        <span class="kw">let</span> <span class="ident">pbar</span>: <span class="ident">ProgressBar</span> <span class="op">=</span>
-            <span class="ident">ProgressBarBuilder</span>::<span class="ident">new</span>(<span class="ident">buffer</span>.<span class="ident">par_lines</span>().<span class="ident">count</span>(), <span class="string">&quot;Generating Candidates&quot;</span>).<span class="ident">build</span>();
-        <span class="ident">buffer_iter</span> <span class="op">=</span> <span class="ident">buffer_vec</span>.<span class="ident">par_iter</span>().<span class="ident">enumerate</span>().<span class="ident">progress_with</span>(<span class="ident">pbar</span>);
+        <span class="kw">let</span> <span class="ident">file_x_len</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">BufReader</span>::<span class="ident">new</span>(<span class="ident">File</span>::<span class="ident">open</span>(<span class="ident">doc_x</span>)<span class="question-mark">?</span>).<span class="ident">lines</span>().<span class="ident">count</span>();
+        <span class="kw">let</span> <span class="ident">pbar</span>: <span class="ident">ProgressBar</span> <span class="op">=</span> <span class="ident">ProgressBarBuilder</span>::<span class="ident">new</span>(<span class="ident">file_x_len</span>, <span class="string">&quot;Processing&quot;</span>).<span class="ident">build</span>();
+        <span class="ident">file_x_iter</span> <span class="op">=</span> <span class="ident">reader_x</span>
+            .<span class="ident">lines</span>()
+            .<span class="ident">enumerate</span>()
+            .<span class="ident">par_bridge</span>()
+            .<span class="ident">progress_with</span>(<span class="ident">pbar</span>);
     }
 
-    <span class="ident">buffer_iter</span>.<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">line_id</span>, <span class="ident">line_vec</span>)<span class="op">|</span> {
-        <span class="kw">let</span> <span class="ident">line</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="ident">line_vec</span>).<span class="ident">unwrap</span>();
-
-        <span class="kw">let</span> <span class="ident">candidates_protected</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">ID</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">Mutex</span>::<span class="ident">new</span>(<span class="ident">HashSet</span>::<span class="ident">new</span>()));
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">qgram_array</span>: <span class="ident">PosQGramArray</span> <span class="op">=</span> <span class="ident">PosQGramArray</span>::<span class="ident">from</span>(<span class="ident">line</span>, <span class="ident">q</span>);
-
-        <span class="kw">let</span> <span class="ident">prefix_len</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">calc_prefix_len</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">qgram_array</span>, <span class="kw-2">&amp;</span><span class="ident">inverted_index</span>, <span class="ident">q</span>, <span class="ident">tau</span>);
+    <span class="ident">file_x_iter</span>.<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">x_id</span>, <span class="ident">line_x</span>)<span class="op">|</span> {
+        <span class="kw">let</span> <span class="ident">x_content</span> <span class="op">=</span> <span class="ident">String</span>::<span class="ident">from</span>(<span class="ident">line_x</span>.<span class="ident">unwrap</span>());
         <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
-        <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Prefix Len: {}&quot;</span>, <span class="ident">prefix_len</span>);
-        <span class="ident">qgram_array</span>.<span class="ident">par_iter</span>().<span class="ident">take</span>(<span class="ident">prefix_len</span>).<span class="ident">for_each</span>(<span class="op">|</span><span class="ident">qgram</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">candidates_clone</span> <span class="op">=</span> <span class="ident">candidates_protected</span>.<span class="ident">clone</span>();
+        <span class="macro">trace</span><span class="macro">!</span>(
+            <span class="string">&quot;=====================\nCurrent line {}: {}&quot;</span>,
+            <span class="ident">x_id</span>,
+            <span class="ident">x_content</span>
+        );
 
-            <span class="kw">let</span> <span class="ident">token_x</span>: <span class="kw-2">&amp;</span><span class="ident">Token</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">qgram</span>.<span class="ident">token</span>;
-            <span class="kw">let</span> <span class="ident">loc_x</span>: <span class="kw-2">&amp;</span><span class="ident">Loc</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">qgram</span>.<span class="ident">loc</span>;
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">qgram_array_x</span>: <span class="ident">PosQGramArray</span> <span class="op">=</span> <span class="ident">PosQGramArray</span>::<span class="ident">from</span>(<span class="kw-2">&amp;</span><span class="ident">x_content</span>, <span class="ident">q</span>);
+        <span class="comment">// PosQGramArray is sorted in increasing order of location, but we need to sort it in increasing order of frequency</span>
+        <span class="comment">// to calculate the prefix length, which is stored in the secod slot of InvertedList</span>
+        <span class="ident">qgram_array_x</span>.<span class="ident">sort_by_frequency</span>(<span class="kw-2">&amp;</span><span class="ident">inverted_index</span>);
 
-            <span class="kw">let</span> <span class="ident">inverted_list</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">inverted_index</span>[<span class="ident">token_x</span>];
-            <span class="ident">inverted_list</span>.<span class="ident">par_iter</span>()
-                <span class="comment">// since this is self-join, filter to avoid duplication</span>
-                .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">qgram</span><span class="op">|</span> <span class="ident">qgram</span>.<span class="number">0</span> <span class="op">&gt;</span> <span class="ident">line_id</span>)
-                .<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">id</span>, <span class="ident">loc</span>)<span class="op">|</span> {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">candidates_guard</span> <span class="op">=</span> <span class="ident">candidates_clone</span>.<span class="ident">lock</span>();
+        <span class="comment">// calculate a prefix length between `tau + 1` and `q * tau + 1`, by `calc_prefix_len()`</span>
+        <span class="kw">let</span> <span class="ident">prefix_len</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">calc_prefix_len</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">qgram_array_x</span>, <span class="ident">q</span>, <span class="ident">tau</span>);
+
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">candidates</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ID</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">qgram_array_x</span>
+            .<span class="ident">par_iter</span>()
+            .<span class="ident">take</span>(<span class="ident">prefix_len</span>)
+            .<span class="ident">flat_map</span>(<span class="op">|</span><span class="ident">qgram</span><span class="op">|</span> {
+                <span class="kw">let</span> <span class="ident">token_x</span>: <span class="ident">Token</span> <span class="op">=</span> <span class="ident">qgram</span>.<span class="ident">token</span>.<span class="ident">clone</span>();
+                <span class="kw">let</span> <span class="ident">loc_x</span>: <span class="ident">Loc</span> <span class="op">=</span> <span class="ident">qgram</span>.<span class="ident">loc</span>;
+
+                <span class="comment">// NOTE, the first slot is the inverted list of document y</span>
+                <span class="kw">let</span> <span class="ident">inverted_list</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">Loc</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">inverted_index</span>[<span class="kw-2">&amp;</span><span class="ident">token_x</span>].<span class="number">0</span>;
                 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
                 <span class="macro">trace</span><span class="macro">!</span>(
-                    <span class="string">&quot;x: {} x.id: {} \n I-list of `{}`: {:?} \n y: {} y.id: {} contained: {} \n x.len: {} y.len: {} \n x.loc: {} y.loc: {}&quot;</span>,
-                    <span class="ident">line</span>,
-                    <span class="ident">line_id</span>,
+                    <span class="string">&quot;**************\nI-list of `{}`: {:?}&quot;</span>,
                     <span class="ident">token_x</span>,
                     <span class="ident">inverted_list</span>,
-                    <span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="kw-2">&amp;</span><span class="ident">buffer_vec</span>[<span class="kw-2">*</span><span class="ident">id</span>]).<span class="ident">unwrap</span>(),
-                    <span class="ident">id</span>,
-                    <span class="ident">candidates_guard</span>.<span class="ident">contains</span>(<span class="ident">id</span>),
-                    <span class="ident">line</span>.<span class="ident">len</span>(),
-                    <span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="kw-2">&amp;</span><span class="ident">buffer_vec</span>[<span class="kw-2">*</span><span class="ident">id</span>]).<span class="ident">unwrap</span>().<span class="ident">len</span>(),
-                    <span class="ident">loc_x</span>,
-                    <span class="ident">loc</span>
                 );
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">candidates_guard</span>.<span class="ident">contains</span>(<span class="ident">id</span>)
-                    <span class="comment">// length filter</span>
-                    <span class="kw-2">&amp;</span><span class="op">&amp;</span> (<span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="kw-2">&amp;</span><span class="ident">buffer_vec</span>[<span class="kw-2">*</span><span class="ident">id</span>]).<span class="ident">unwrap</span>().<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">isize</span> <span class="op">-</span> <span class="ident">line</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">isize</span>).<span class="ident">abs</span>() <span class="op">&lt;</span><span class="op">=</span> <span class="ident">tau</span> <span class="kw">as</span> <span class="ident">isize</span>
-                    <span class="comment">// position filter</span>
-                    <span class="kw-2">&amp;</span><span class="op">&amp;</span> (<span class="kw-2">*</span><span class="ident">loc_x</span> <span class="kw">as</span> <span class="ident">isize</span> <span class="op">-</span> <span class="kw-2">*</span><span class="ident">loc</span> <span class="kw">as</span> <span class="ident">isize</span>).<span class="ident">abs</span>() <span class="op">&lt;</span><span class="op">=</span> <span class="ident">tau</span> <span class="kw">as</span> <span class="ident">isize</span>
-                {
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
-                    <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;insert `{}` for `{}`&quot;</span>,
-                           <span class="ident">line</span>,
-                           <span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="kw-2">&amp;</span><span class="ident">buffer_vec</span>[<span class="kw-2">*</span><span class="ident">id</span>]).<span class="ident">unwrap</span>());
-                    <span class="ident">candidates_guard</span>.<span class="ident">insert</span>(<span class="kw-2">*</span><span class="ident">id</span>);
-                }
-            });
-        });
-        <span class="kw">let</span> <span class="ident">candidates_set</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">ID</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Arc</span>::<span class="ident">try_unwrap</span>(<span class="ident">candidates_protected</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;Arc is weak&quot;</span>)
-            .<span class="ident">into_inner</span>();
-        <span class="kw">let</span> <span class="ident">candidates</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">ID</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">candidates_set</span>
-            .<span class="ident">par_iter</span>()
+
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">filtered</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ID</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">inverted_list</span>
+                    .<span class="ident">par_iter</span>()
+                    .<span class="ident">filter</span>(<span class="op">|</span>(<span class="ident">y_id</span>, <span class="ident">_loc_y</span>)<span class="op">|</span> {
+                        <span class="comment">// only consider line id greater than current line when self-join</span>
+                        <span class="comment">// If doc_x != doc_y =&gt; false &amp;&amp; not_evaluated || true =&gt; true</span>
+                        <span class="comment">// If doc_x == doc_y =&gt; true &amp;&amp; (*id &gt; x_id) || false =&gt; (*id &gt; x_id)</span>
+                        (<span class="ident">doc_x</span> <span class="op">=</span><span class="op">=</span> <span class="ident">doc_y</span>) <span class="kw-2">&amp;</span><span class="op">&amp;</span> (<span class="kw-2">*</span><span class="ident">y_id</span> <span class="op">&gt;</span> <span class="ident">x_id</span>) <span class="op">|</span><span class="op">|</span> (<span class="ident">doc_x</span> <span class="op">!</span><span class="op">=</span> <span class="ident">doc_y</span>)
+                    })
+                    .<span class="ident">filter</span>(<span class="op">|</span>(<span class="ident">y_id</span>, <span class="ident">loc_y</span>)<span class="op">|</span> {
+                        <span class="comment">// length filter</span>
+                        (<span class="ident">y_vec</span>[<span class="kw-2">*</span><span class="ident">y_id</span>].<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">isize</span> <span class="op">-</span> <span class="ident">x_content</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">isize</span>).<span class="ident">abs</span>() <span class="op">&lt;</span><span class="op">=</span> <span class="ident">tau</span> <span class="kw">as</span> <span class="ident">isize</span>
+                        <span class="comment">// position filter</span>
+                            <span class="kw-2">&amp;</span><span class="op">&amp;</span> (<span class="ident">loc_x</span> <span class="kw">as</span> <span class="ident">isize</span> <span class="op">-</span> <span class="kw-2">*</span><span class="ident">loc_y</span> <span class="kw">as</span> <span class="ident">isize</span>).<span class="ident">abs</span>() <span class="op">&lt;</span><span class="op">=</span> <span class="ident">tau</span> <span class="kw">as</span> <span class="ident">isize</span>
+                    })
+                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">pair</span><span class="op">|</span> <span class="ident">pair</span>.<span class="number">0</span>)
+                    .<span class="ident">collect</span>();
+                <span class="ident">filtered</span>.<span class="ident">par_sort_unstable</span>();
+                <span class="ident">filtered</span>.<span class="ident">dedup</span>();
+                <span class="ident">filtered</span>
+            })
             .<span class="ident">collect</span>();
+        <span class="ident">candidates</span>.<span class="ident">par_sort_unstable</span>();
+        <span class="ident">candidates</span>.<span class="ident">dedup</span>();
 
         <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
-        <span class="macro">info</span><span class="macro">!</span>(<span class="string">&quot;Candidate of `{}`: {:?}&quot;</span>, <span class="ident">line</span>, <span class="ident">candidates</span>);
+        <span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Candidate of `{}: {}`: {:?}&quot;</span>, <span class="ident">x_id</span>, <span class="ident">x_content</span>, <span class="ident">candidates</span>);
 
-        <span class="kw">let</span> <span class="ident">out_vec_clone</span> <span class="op">=</span> <span class="ident">out_vec_protected</span>.<span class="ident">clone</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">verified</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">candidates</span>
+            .<span class="ident">par_iter</span>()
+            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">y_id</span><span class="op">|</span> {
+                <span class="kw">let</span> <span class="ident">y_content</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="kw-2">&amp;</span><span class="ident">y_vec</span>[<span class="kw-2">*</span><span class="ident">y_id</span>]).<span class="ident">unwrap</span>();
+                <span class="kw">let</span> <span class="ident">qgram_array_y</span> <span class="op">=</span> <span class="ident">PosQGramArray</span>::<span class="ident">from</span>(<span class="kw-2">&amp;</span><span class="ident">y_content</span>, <span class="ident">q</span>);
+                (<span class="ident">y_id</span>, <span class="ident">y_content</span>, <span class="ident">qgram_array_y</span>)
+            })
+            .<span class="ident">filter_map</span>(<span class="op">|</span>(<span class="ident">y_id</span>, <span class="ident">y_content</span>, <span class="kw-2">mut</span> <span class="ident">qgram_array_y</span>)<span class="op">|</span>{
+                <span class="ident">verify</span>(
+                    <span class="ident">qgram_array_x</span>.<span class="ident">to_vec</span>(),
+                    <span class="ident">x_id</span>,
+                    <span class="kw-2">&amp;</span><span class="ident">x_content</span>,
+                    <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">qgram_array_y</span>,
+                    <span class="kw-2">*</span><span class="ident">y_id</span>,
+                    <span class="kw-2">&amp;</span><span class="ident">y_content</span>,
+                    <span class="kw-2">&amp;</span><span class="ident">inverted_index</span>,
+                    <span class="ident">q</span>,
+                    <span class="ident">tau</span>,
+                )
+            })
+            .<span class="ident">collect</span>();
+        <span class="ident">verified</span>.<span class="ident">par_iter_mut</span>().<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">_x_id</span>, <span class="ident">yvec</span>)<span class="op">|</span> <span class="ident">yvec</span>.<span class="ident">par_sort_unstable_by</span>(<span class="op">|</span>(<span class="ident">a_id</span>, <span class="ident">_a_ed</span>), (<span class="ident">b_id</span>, <span class="ident">_b_ed</span>)<span class="op">|</span> <span class="ident">a_id</span>.<span class="ident">cmp</span>(<span class="kw-2">&amp;</span><span class="ident">b_id</span>)));
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">v</span>) <span class="op">=</span> <span class="ident">verify</span>(<span class="ident">line_id</span>, <span class="kw-2">&amp;</span><span class="ident">candidates</span>, <span class="ident">buffer_vec</span>.<span class="ident">clone</span>(), <span class="kw-2">&amp;</span><span class="ident">inverted_index</span>, <span class="ident">q</span>, <span class="ident">tau</span>) {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out_vec_guard</span> <span class="op">=</span> <span class="ident">out_vec_clone</span>.<span class="ident">lock</span>();
-            <span class="ident">out_vec_guard</span>.<span class="ident">push</span>(<span class="ident">v</span>);
-        };
+        <span class="ident">output_s</span>.<span class="ident">send</span>(<span class="ident">verified</span>).<span class="ident">unwrap</span>();
+
     });
+    <span class="ident">drop</span>(<span class="ident">output_s</span>);
 
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">out</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>)<span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Arc</span>::<span class="ident">try_unwrap</span>(<span class="ident">out_vec_protected</span>)
-        .<span class="ident">expect</span>(<span class="string">&quot;Arc is weak&quot;</span>)
-        .<span class="ident">into_inner</span>();
-    <span class="ident">out</span>.<span class="ident">par_sort_by_key</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="number">0</span>);
+    <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="kw-2">mut</span> <span class="ident">v</span>) <span class="op">=</span> <span class="ident">output_r</span>.<span class="ident">recv</span>() {
+        <span class="ident">output_vec</span>.<span class="ident">append</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">v</span>);
+    }
+    <span class="ident">drop</span>(<span class="ident">output_r</span>);
 
-    <span class="ident">out</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">id_x</span>, <span class="ident">pairs</span>)<span class="op">|</span> {
+    <span class="comment">// sort by line id of doc_x, i.e. the first slot</span>
+    <span class="ident">output_vec</span>.<span class="ident">par_sort_by_key</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="number">0</span>);
+
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;cli&quot;</span>)]</span>
+    <span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;Mathes: {:?}&quot;</span>, <span class="ident">output_vec</span>);
+
+    <span class="ident">output_vec</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">id_x</span>, <span class="ident">pairs</span>)<span class="op">|</span> {
+        <span class="comment">// first sort the pairs, which is a vector of ID and edit-distance,</span>
+        <span class="comment">// by ID, that is the ID from doc_y</span>
         <span class="ident">pairs</span>.<span class="ident">iter</span>().<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">id_y</span>, <span class="ident">ed</span>)<span class="op">|</span> {
             <span class="ident">writer</span>
                 .<span class="ident">write_all</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{},{},{}\n&quot;</span>, <span class="ident">id_x</span>, <span class="ident">id_y</span>, <span class="ident">ed</span>).<span class="ident">as_bytes</span>())
@@ -474,6 +562,42 @@ All matching pairs in the input file.
     });
 
     <span class="prelude-val">Ok</span>(())
+}
+
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="kw">mod</span> <span class="ident">tests</span> {
+    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">qgram</span>::{<span class="ident">PosQGram</span>, <span class="ident">PosQGramArray</span>};
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_min_edit_error</span>() {
+        <span class="kw">let</span> <span class="ident">qgram_array</span>: <span class="ident">PosQGramArray</span> <span class="op">=</span> <span class="ident">PosQGramArray</span>::<span class="ident">from</span>(<span class="string">&quot;hello&quot;</span>, <span class="number">2</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">min_edit_errors</span>(<span class="kw-2">&amp;</span><span class="ident">qgram_array</span>, <span class="number">2</span>), <span class="number">2</span>);
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_calc_prefix_len</span>() {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">qgram_array</span>: <span class="ident">PosQGramArray</span> <span class="op">=</span> <span class="ident">PosQGramArray</span>::<span class="ident">from_vec</span>(<span class="macro">vec</span><span class="macro">!</span>[
+            <span class="ident">PosQGram</span> {
+                <span class="ident">token</span>: <span class="string">&quot;lo&quot;</span>.<span class="ident">to_string</span>(),
+                <span class="ident">loc</span>: <span class="number">3</span>,
+            },
+            <span class="ident">PosQGram</span> {
+                <span class="ident">token</span>: <span class="string">&quot;he&quot;</span>.<span class="ident">to_string</span>(),
+                <span class="ident">loc</span>: <span class="number">0</span>,
+            },
+            <span class="ident">PosQGram</span> {
+                <span class="ident">token</span>: <span class="string">&quot;el&quot;</span>.<span class="ident">to_string</span>(),
+                <span class="ident">loc</span>: <span class="number">1</span>,
+            },
+            <span class="ident">PosQGram</span> {
+                <span class="ident">token</span>: <span class="string">&quot;ll&quot;</span>.<span class="ident">to_string</span>(),
+                <span class="ident">loc</span>: <span class="number">2</span>,
+            },
+        ]);
+        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">calc_prefix_len</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">qgram_array</span>, <span class="number">2</span>, <span class="number">2</span>);
+        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">result</span>, <span class="number">4</span>);
+    }
 }
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "ed_join";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
