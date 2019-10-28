@@ -1,7 +1,9 @@
-/target/
+target/
 
-/Cargo.lock
+Cargo.lock
 
 **/*.rs.bk
 
-/sample_test*.txt
+testset/*
+
+
