@@ -21,8 +21,9 @@ fn main() -> Result<()> {
         .format(|buf, record| {
             writeln!(
                 buf,
-                "[{}] \n {}",
-                record.module_path().unwrap(),
+                "{}",
+                // "[{}] \n {}",
+                // record.module_path().unwrap(),
                 record.args()
             )
         })
@@ -34,12 +35,7 @@ fn main() -> Result<()> {
         std::process::exit(1);
     });
 
-    info!(
-        "input file: {:?}, q = {}, tau = {}",
-        &config.filepath, config.q, config.tau
-    );
-
-    match ed_join(&config.filepath, config.q, config.tau) {
+    match ed_join(&config.doc_x, &config.doc_y, config.q, config.tau) {
         Ok(()) => Ok(()),
         Err(e) => Err(e),
     }

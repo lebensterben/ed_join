@@ -1,13 +1,13 @@
-use indexmap::IndexMap;
-use parking_lot::RwLock;
+use crossbeam_channel::unbounded;
 use rayon::prelude::*;
 use std::{
+    cmp::Ordering,
+    collections::HashMap,
     fmt::{Display, Formatter},
     fs::File,
     io::{prelude::*, BufReader},
     ops::{Deref, DerefMut},
     path::PathBuf,
-    sync::Arc,
 };
 
 use crate::errors::*;
@@ -23,7 +23,7 @@ pub(crate) type Loc = usize;
 A poistional q-gram is a `token`-`location` pair for a given string.
  */
 #[derive(Clone, Debug, Default)]
-pub(crate) struct PosQGram {
+pub struct PosQGram {
     pub token: Token,
     pub loc: Loc,
 }
@@ -31,6 +31,16 @@ pub(crate) struct PosQGram {
 impl PosQGram {
     fn from(t: Token, l: Loc) -> Self {
         Self { token: t, loc: l }
+    }
+
+    pub fn cmp(&self, other: &Self, inverted: InvertedIndex) -> Ordering {
+        let len_a: usize = inverted.get(&self.token).unwrap().1;
+        let len_b: usize = inverted.get(&other.token).unwrap().1;
+        match len_a.cmp(&len_b) {
+            Ordering::Greater => Ordering::Greater,
+            Ordering::Less => Ordering::Less,
+            Ordering::Equal => self.token.as_bytes().cmp(&other.token.as_bytes()),
+        }
     }
 }
 
@@ -71,10 +81,10 @@ s   | H | e | l | l | o |  <=>  {(0, He), (1, el), (2, ll), (3, lo)}  (index, bi
 Hence, we define positional q-gram array as a collection of token-location pair, where tokens are elements of a q-gram set of a string.
 And it's a valid representation of the original string.
 
-*/
+ */
 #[derive(Debug)]
-pub(crate) struct PosQGramArray {
-    inner: Vec<PosQGram>,
+pub struct PosQGramArray {
+    pub inner: Vec<PosQGram>,
 }
 
 impl PosQGramArray {
@@ -82,6 +92,13 @@ impl PosQGramArray {
         Self {
             inner: Vec::<PosQGram>::new(),
         }
+    }
+
+    /**
+    Convenient method for converting a vector of PosQGram to PosQGramArray
+     */
+    pub fn from_vec(inner: Vec<PosQGram>) -> Self {
+        Self { inner }
     }
 
     /**
@@ -105,9 +122,32 @@ impl PosQGramArray {
             inner.push(PosQGram::from(key.to_string(), pos));
         });
         // sort in increasing order of location
-        inner.par_sort_by_key(|qgram| qgram.loc);
+        inner.par_sort_unstable_by_key(|qgram| qgram.loc);
 
         Self { inner }
+    }
+
+    /**
+    Actually, it's sorted in the following hierarchical order:
+
+    - Firstly, in decreasing order of frequency
+    - Secondly, in lexicographical order of token name
+
+    */
+    pub fn sort_by_frequency(&mut self, inverted: &InvertedIndex) {
+        self.par_sort_unstable_by(|a, b| {
+            let len_a: usize = inverted.get(&a.token).unwrap().1;
+            let len_b: usize = inverted.get(&b.token).unwrap().1;
+            match len_a.cmp(&len_b) {
+                Ordering::Greater => Ordering::Greater,
+                Ordering::Less => Ordering::Less,
+                Ordering::Equal => a.token.as_bytes().cmp(&b.token.as_bytes()),
+            }
+        });
+    }
+
+    pub fn sort_by_location(&mut self) {
+        self.par_sort_unstable_by(|a, b| a.loc.cmp(&b.loc))
     }
 }
 
@@ -138,11 +178,19 @@ impl Display for PosQGramArray {
     }
 }
 
-type InvertedList = Vec<(ID, Loc)>;
 /**
-An indexmap of inverted lists for each token.
+An InvertedList is a vector of ID-location pair, where ID is the line number where a certain token appears, and location is the index of that line where the token appear.
  */
-pub(crate) type InvertedIndex = IndexMap<Token, InvertedList>;
+pub type InvertedList = Vec<(ID, Loc)>;
+/**
+An indexmap of inverted lists for each token. The keys are Token, while the values are a tuple of  InvertedList and usize.
+
+- When it's self-join, the usize is the total number of occurences of the token, and the InvertedList is for the document.
+- When it's not self-join, the usize is still the total number of occurences of the token, while the InvertedList is only for the second document.
+
+ */
+pub type InvertedIndex = HashMap<Token, (InvertedList, usize)>;
+// pub(crate) type InvertedIndex = IndexMap<Token, (InvertedList, InvertedList)>;
 
 /**
 This function reads an entire file into a string, count q-grams by parallel iterators, and returns a hashmap where the keys are q-gram tokens, and values are a vector of line-position pair.
@@ -151,70 +199,97 @@ It may look silly to do such a thing, but a file with 1 million lines where each
 
 # Args
 
-* `doc`: A `&std::path::Path` type variable indicating the path, absolute or relative, to the document to be processed.
-* `q`: A `usize` value used to generate the `q`-grams.
+* `doc_x` and `doc_y`: Path, absolute or relative, to documents to be processed.
+* `file_x_len` and `file_y_len`: Number of lines for each file. This is used
+* `q`: A tuning parameter used to generate the `q`-grams.
 
 # Returns
 
 * When succesful, returns a B-Tree map, where keys are numbers of occurences of all token, i.e. a q-gram, and values are vectors of tokens that have that number of occurences.
 
  */
-pub(crate) fn generate_inverted_index(doc: &PathBuf, q: usize) -> Result<InvertedIndex> {
-    let file: File = File::open(doc)?;
-    let mut reader: BufReader<File> = BufReader::new(file);
-    let mut buffer: String = String::new();
-    // read the entire file into a string so we can use parallel iterator
-    reader.read_to_string(&mut buffer)?;
+pub fn generate_inverted_index(
+    doc_x: &PathBuf,
+    doc_y: &PathBuf,
+    q: usize,
+) -> Result<InvertedIndex> {
+    let reader_y: BufReader<File> = BufReader::new(File::open(doc_y)?);
+    let mut ngram_map: InvertedIndex = HashMap::new();
 
-    let ngram_map_protected: Arc<RwLock<InvertedIndex>> = Arc::new(RwLock::new(IndexMap::new()));
-
-    let buffer_vec: Vec<Vec<u8>> = buffer
-        .par_lines()
-        // Convert each line to Vec<u8> type so we can use par_windows method on each line
-        .map(Vec::from)
-        // Convert the buffer into a Vec<Vec<u8>> so we can use enumerate on the file
-        .collect();
-
-    buffer_vec.par_iter().enumerate().for_each(
-        // Though each line is Vec<u8> type, enumerate() returns it as a slice of u8
-        |(line_id, line_content)| {
-            // Make a clone and the references count will increase by 1
-            let guard = ngram_map_protected.clone();
-
+    // first collect ngrams for document_y
+    let (map_y_s, map_y_r) = unbounded::<(Token, (ID, Loc))>();
+    reader_y
+        .lines()
+        .enumerate()
+        .for_each(|(line_id, line_result)| {
+            let map_y_s_clone = map_y_s.clone();
             // `par_windows()` creates a parallel iterator on ovelapping slices of the input
-            let slice: Vec<_> = line_content
+            let slice: Vec<_> = Vec::from(line_result.unwrap())
                 .par_windows(q)
                 // convert u8 to &[str], and then String, so we can use enumerate method on each qgram
-                .map(|ngrams| {
-                    std::str::from_utf8(ngrams)
+                .map(|qgrams| {
+                    std::str::from_utf8(qgrams)
+                        .expect("Error when parsing ngrams")
+                        .to_string()
+                })
+                .collect();
+            slice.into_par_iter().enumerate().for_each(|(pos, key)| {
+                map_y_s_clone.send((key, (line_id, pos))).unwrap();
+            });
+        });
+    drop(map_y_s);
+
+    while let Ok((key, (line_id, pos))) = map_y_r.recv() {
+        ngram_map
+            .entry(key)
+            .or_insert((Vec::new(), 0))
+            .0
+            .push((line_id, pos));
+    }
+    drop(map_y_r);
+
+    // then count the occurences for doc_y only, and store it in the second slot
+    ngram_map
+        .values_mut()
+        .par_bridge()
+        .for_each(|value| value.1 = value.0.len());
+
+    // Only process doc_x when it's not self-join
+    // but only add the count to the second slot of the value
+    // And the channel only sends the Token
+    if doc_x != doc_y {
+        let reader_x: BufReader<File> = BufReader::new(File::open(doc_x)?);
+        let (map_x_s, map_x_r) = unbounded::<Token>();
+
+        reader_x.lines().for_each(|line_result| {
+            let map_x_s_clone = map_x_s.clone();
+            let slice: Vec<_> = Vec::from(line_result.unwrap())
+                .par_windows(q)
+                .map(|qgrams| {
+                    std::str::from_utf8(qgrams)
                         .expect("Error when parsing ngrams")
                         .to_string()
                 })
                 .collect();
 
-            slice.into_par_iter().enumerate().for_each(|(pos, key)| {
-                // Create a write lock
-                let mut map = guard.write();
-                map.entry(key).or_insert(Vec::new()).push((line_id, pos));
+            slice.into_par_iter().for_each(|key| {
+                map_x_s_clone.send(key).unwrap();
             });
-        },
-    );
-
-    let mut ngram_map: InvertedIndex = Arc::try_unwrap(ngram_map_protected)
-        .expect("Arc is weak")
-        .into_inner();
-
-    // sort each value by ID (line number)
-    ngram_map.par_iter_mut().for_each(|(_, list)| {
-        list.par_sort_unstable_by_key(|key| {
-            key.0 //sort by id
         });
-    });
-    // sort keys by length of the value (InvertedList)
-    ngram_map.par_sort_by(|k1, v1, k2, v2| match v1.len().cmp(&v2.len()) {
-        std::cmp::Ordering::Equal => k1.cmp(k2),
-        std::cmp::Ordering::Less => std::cmp::Ordering::Less,
-        std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
+        drop(map_x_s);
+
+        while let Ok(key) = map_x_r.recv() {
+            let (_list_y, count) = ngram_map.entry(key).or_insert((Vec::new(), 0));
+            *count += 1;
+        }
+        drop(map_x_r);
+    }
+
+    // sort values by ID (line number)
+    ngram_map.par_iter_mut().for_each(|(_, (list_y, _count))| {
+        list_y.par_sort_unstable_by_key(|(id_y, _loc_y)| {
+            *id_y //sort by id
+        });
     });
 
     Ok(ngram_map)
@@ -237,11 +312,13 @@ mod tests {
     #[test]
     fn qgram_counter() {
         let testfile: PathBuf = PathBuf::from("./testset/sample_test1.txt".to_string());
-        let result: String = format!("{:?}", generate_inverted_index(&testfile, 2).unwrap());
-
-        assert_eq!(
-            &result,
-            "{\"al\": [(3, 1)], \"ha\": [(3, 0)], \"la\": [(2, 3)], \"lo\": [(0, 3), (3, 3)], \"el\": [(0, 1), (1, 1), (2, 1)], \"he\": [(0, 0), (1, 0), (2, 0)], \"ll\": [(0, 2), (1, 2), (2, 2), (3, 2)]}"
+        let result: String = format!(
+            "{:?}",
+            generate_inverted_index(&testfile, &testfile, 2)
+                .unwrap()
+                .get("he")
         );
+
+        assert_eq!(result, format!("{:?}", Some(([(0, 0), (1, 0), (2, 0)], 3))));
     }
 }

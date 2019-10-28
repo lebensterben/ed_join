@@ -14,17 +14,22 @@ error_chain! {
     errors {
         InputFileNotReadable(f: String) {
             description("invalid input file"),
-            display("input file not found/readable: 'filepath == {}'", f)
+            display("input file not found/readable: 'filepath = {}'", f)
         }
 
-        InvalidParameterQ(t: String) {
-            description("invalid parameter"),
-            display("q should be an integer, and 1 <= q <= 10: 'q == {}'", t)
+        QTooSmall(q: usize) {
+            description("q is too small"),
+            display("q should be an integer, and q >= 1 : 'q = {}'", q)
         }
 
-        InvalidParameterTau(t: String) {
-            description("invalid parameter"),
-            display("tau should be an integer, and tau >= 1: 'tau == {}'", t)
+        QTooLarge(q: usize, min_line_len: usize) {
+            description("q is to large"),
+            display("q cannot excess the length of records: 'q = {} > {}'", q, min_line_len)
+        }
+
+        TauTooSmall(t: usize) {
+            description("tau is to small"),
+            display("tau should be an integer, and tau >= 1: 'tau = {}'", t)
         }
 
     }
