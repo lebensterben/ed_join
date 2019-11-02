@@ -298,6 +298,13 @@
 <span id="298">298</span>
 <span id="299">299</span>
 <span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">crossbeam_channel</span>::<span class="ident">unbounded</span>;
 <span class="kw">use</span> <span class="ident">rayon</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
@@ -319,16 +326,16 @@
 
 <span class="comment">// Algorithm 2</span>
 <span class="comment">// NOTE: PosQGram is not by default sorted in increasing frequency</span>
-<span class="doccomment">/**
-Given a set of q-grams, find the minimum number of edit operations that destroys all q-grams.
-
-# Parameters
- * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.
- * `q`: A positive integer as the tuning parameter for length of q-grams.
-
-# Return
-The minimum number of edit operations that destroy all q-grams in the given set.
- */</span>
+<span class="doccomment">/// Given a set of q-grams, find the minimum number of edit operations that destroys all q-grams.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///  * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.</span>
+<span class="doccomment">///  * `q`: A positive integer as the tuning parameter for length of q-grams.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Return</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The minimum number of edit operations that destroy all q-grams in the given set.</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">min_edit_errors</span>(<span class="ident">qgram_array</span>: <span class="kw-2">&amp;</span>[<span class="ident">PosQGram</span>], <span class="ident">q</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cnt</span> <span class="op">=</span> <span class="number">0</span>;
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">loc</span> <span class="op">=</span> <span class="number">0</span>;
@@ -351,17 +358,20 @@ The minimum number of edit operations that destroy all q-grams in the given set.
 }
 
 <span class="comment">// Algorithm 3</span>
-<span class="doccomment">/**
-Given a set of q-grams, find the minimum length of prefix such that if all the q-grams in the prefix are mismatched, it will incur at least `tau + ` edit errors.
-
-# Parameters
- * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.
- * `q`: A positive integer as the tuning parameter for length of q-grams.
- * `tau`: A positive integer as the tuning parameter for threshold for matching.
-
-# Return
-The minimum length of prefix such that if all the q-grams in the prefix are mismatched, it will incur at least `tau + ` edit errors.
- */</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Given a set of q-grams, find the minimum length of prefix such that if all the q-grams in the prefix are mismatched,</span>
+<span class="doccomment">/// it will incur at least `tau + ` ed/it errors.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///  * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.</span>
+<span class="doccomment">///  * `q`: A positive integer as the tuning parameter for length of q-grams.</span>
+<span class="doccomment">///  * `tau`: A positive integer as the tuning parameter for threshold for matching.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Return</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The minimum length of prefix such that if all the q-grams in the prefix are mismatched,</span>
+<span class="doccomment">/// it will incur at least `tau + ` edit errors.</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">calc_prefix_len</span>(<span class="ident">qgram_array</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">PosQGramArray</span>, <span class="ident">q</span>: <span class="ident">usize</span>, <span class="ident">tau</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">tau</span> <span class="op">+</span> <span class="number">1</span>;
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">right</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">q</span> <span class="op">*</span> <span class="ident">tau</span> <span class="op">+</span> <span class="number">1</span>;
@@ -389,17 +399,21 @@ The minimum length of prefix such that if all the q-grams in the prefix are mism
 }
 
 <span class="comment">// Algorithm 1</span>
-<span class="doccomment">/**
-Given two input files, `doc_x` and `doc_y`, and two parameters, `q` and `tau`, find all records in `doc_y` that match records in `doc_x` such that are matched pairs have edit-distance smaller or equal to `tau`.
-
-# Parameters
- * `doc_x` and `doc_y`: Paths to a input files, in which we process each record in `doc_x` and looking for valid matches in `doc_y`
- * `q`: A positive integer as the tuning parameter for length of q-grams. Large `q` reduces the amount of tokens in pre-matching, but makes filtering less effective. Small `q` generates large amount of tokens for filtering, the output of filtering are more likely to be valid matches, but this prolongs the time on filtering.
- * `tau`: A positive integer as the tuning parameter for threshold for matching.
-
-# Return
-All matching pairs. This would be stored in a output file automatically under the same directory of the first input file.
- */</span>
+<span class="doccomment">/// Given two input files, `doc_x` and `doc_y`, and two parameters, `q` and `tau`,</span>
+<span class="doccomment">/// find all records in `doc_y` that match records in `doc_x` such that are matched pairs have edit-distance smaller or equal to `tau`.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///  * `doc_x` and `doc_y`: Paths to a input files, in which we process each record in `doc_x`</span>
+<span class="doccomment">///    and looking for valid matches in `doc_y`</span>
+<span class="doccomment">///  * `q`: A positive integer as the tuning parameter for length of q-grams. Large `q` reduces the amount of tokens in pre-matching,</span>
+<span class="doccomment">///    but makes filtering less effective. Small `q` generates large amount of tokens for filtering,</span>
+<span class="doccomment">///    the output of filtering are more likely to be valid matches, but this prolongs the time on filtering.</span>
+<span class="doccomment">///  * `tau`: A positive integer as the tuning parameter for threshold for matching.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Return</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// All matching pairs. This would be stored in a output file automatically under the same directory of the first input file.</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ed_join</span>(<span class="ident">doc_x</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>, <span class="ident">doc_y</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>, <span class="ident">q</span>: <span class="ident">usize</span>, <span class="ident">tau</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
     <span class="comment">// `doc_x` is read by a BufReader, line by line</span>
     <span class="kw">let</span> <span class="ident">file_x</span>: <span class="ident">File</span> <span class="op">=</span> <span class="ident">File</span>::<span class="ident">open</span>(<span class="ident">doc_x</span>)<span class="question-mark">?</span>;
@@ -600,4 +614,4 @@ All matching pairs. This would be stored in a output file automatically under th
     }
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p><p>You can look for items with an exact name by putting double quotes around your request: <code>"string"</code></p><p>Look for items inside another one by searching for a path: <code>vec::Vec</code></p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "ed_join";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "ed_join";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>

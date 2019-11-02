@@ -305,23 +305,6 @@
 <span id="305">305</span>
 <span id="306">306</span>
 <span id="307">307</span>
-<span id="308">308</span>
-<span id="309">309</span>
-<span id="310">310</span>
-<span id="311">311</span>
-<span id="312">312</span>
-<span id="313">313</span>
-<span id="314">314</span>
-<span id="315">315</span>
-<span id="316">316</span>
-<span id="317">317</span>
-<span id="318">318</span>
-<span id="319">319</span>
-<span id="320">320</span>
-<span id="321">321</span>
-<span id="322">322</span>
-<span id="323">323</span>
-<span id="324">324</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">crossbeam_channel</span>::<span class="ident">unbounded</span>;
 <span class="kw">use</span> <span class="ident">rayon</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
@@ -344,9 +327,7 @@
 <span class="doccomment">/// Corresponds to a position in a string where a token appears.</span>
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type</span> <span class="ident">Loc</span> <span class="op">=</span> <span class="ident">usize</span>;
 
-<span class="doccomment">/**
-A poistional q-gram is a `token`-`location` pair for a given string.
- */</span>
+<span class="doccomment">/// A poistional q-gram is a `token`-`location` pair for a given string.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">Default</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PosQGram</span> {
     <span class="kw">pub</span> <span class="ident">token</span>: <span class="ident">Token</span>,
@@ -375,38 +356,35 @@ A poistional q-gram is a `token`-`location` pair for a given string.
     }
 }
 
-<span class="doccomment">/**
-A collection of token-position pair, as an alternative representation of a string.
-
-For a given string `s` and a integer-valued parameter `q`, q-gram of a string `s` is a set of substrings of length `q`.
-The size of this collection is `s.len() - q`, in which individiual q-grams may not be unique.
-
-When `q` is 1, then the 1-gram (unigram) set is simply a set of all characters in string `s`.
-And we can represent `s` as a collection of index-unigram pairs, where the index indicates the position where the uniqgram appear in the `s`.
-For example,
-
-```text
-
-    +---+---+---+---+---+
-s   | H | e | l | l | o |  &lt;=&gt;  {(0, H), (1, l), (2, l), (3, l), (4, o)}  (index, uni-qgram) pairs
-    +---+---+---+---+---+
-
-```
-
-We can also represent `s` as a collection of index-qgram pair for any q, though there seem to have redundancy. For example, when `q` is 2 and 3
-
-```text
-    +---+---+---+---+---+
-s   | H | e | l | l | o |  &lt;=&gt;  {(0, He), (1, el), (2, ll), (3, lo)}  (index, bi-qgram) pairs
-    +---+---+---+---+---+
-
-                           &lt;=&gt;  {(0, Hel), (1, ell), (2, llo)}  (index, tri-qgram) pairs
-```
-
-Hence, we define positional q-gram array as a collection of token-location pair, where tokens are elements of a q-gram set of a string.
-And it&#39;s a valid representation of the original string.
-
- */</span>
+<span class="doccomment">/// A collection of token-position pair, as an alternative representation of a string.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// For a given string `s` and a integer-valued parameter `q`, q-gram of a string `s` is a set of substrings of length `q`.</span>
+<span class="doccomment">/// The size of this collection is `s.len() - q`, in which individiual q-grams may not be unique.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// When `q` is 1, then the 1-gram (unigram) set is simply a set of all characters in string `s`.</span>
+<span class="doccomment">/// And we can represent `s` as a collection of index-unigram pairs, where the index indicates the position where the uniqgram appear in the `s`.</span>
+<span class="doccomment">/// For example,</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```text</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///     +---+---+---+---+---+</span>
+<span class="doccomment">/// s   | H | e | l | l | o |  &lt;=&gt;  {(0, H), (1, l), (2, l), (3, l), (4, o)}  (index, uni-qgram) pairs</span>
+<span class="doccomment">///     +---+---+---+---+---+</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// We can also represent `s` as a collection of index-qgram pair for any q, though there seem to have redundancy. For example, when `q` is 2 and 3</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```text</span>
+<span class="doccomment">///     +---+---+---+---+---+</span>
+<span class="doccomment">/// s   | H | e | l | l | o |  &lt;=&gt;  {(0, He), (1, el), (2, ll), (3, lo)}  (index, bi-qgram) pairs</span>
+<span class="doccomment">///     +---+---+---+---+---+</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///                            &lt;=&gt;  {(0, Hel), (1, ell), (2, llo)}  (index, tri-qgram) pairs</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Hence, we define positional q-gram array as a collection of token-location pair, where tokens are elements of a q-gram set of a string.</span>
+<span class="doccomment">/// And it&#39;s a valid representation of the original string.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PosQGramArray</span> {
     <span class="kw">pub</span> <span class="ident">inner</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PosQGram</span><span class="op">&gt;</span>,
@@ -419,18 +397,13 @@ And it&#39;s a valid representation of the original string.
         }
     }
 
-    <span class="doccomment">/**
-    Convenient method for converting a vector of PosQGram to PosQGramArray
-     */</span>
+    <span class="doccomment">/// Convenient method for converting a vector of PosQGram to PosQGramArray</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_vec</span>(<span class="ident">inner</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PosQGram</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span> { <span class="ident">inner</span> }
     }
 
-    <span class="doccomment">/**
-    Given a string and a given `q`, generate a PosQGramArray.
-
-    NOTE: The position QGramArray is sorted in increasing order of location.
-     */</span>
+    <span class="doccomment">/// Given a string and a given `q`, generate a PosQGramArray.</span>
+    <span class="comment">// NOTE: The position QGramArray is sorted in increasing order of location.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">q</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="kw">let</span> <span class="ident">slice</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">from</span>(<span class="ident">s</span>)
             .<span class="ident">par_windows</span>(<span class="ident">q</span>)
@@ -452,13 +425,10 @@ And it&#39;s a valid representation of the original string.
         <span class="self">Self</span> { <span class="ident">inner</span> }
     }
 
-    <span class="doccomment">/**
-    Actually, it&#39;s sorted in the following hierarchical order:
-
-    - Firstly, in decreasing order of frequency
-    - Secondly, in lexicographical order of token name
-
-    */</span>
+    <span class="doccomment">/// Actually, it&#39;s sorted in the following hierarchical order:</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// - Firstly, in decreasing order of frequency</span>
+    <span class="doccomment">/// - Secondly, in lexicographical order of token name</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sort_by_frequency</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">inverted</span>: <span class="kw-2">&amp;</span><span class="ident">InvertedIndex</span>) {
         <span class="self">self</span>.<span class="ident">par_sort_unstable_by</span>(<span class="op">|</span><span class="ident">a</span>, <span class="ident">b</span><span class="op">|</span> {
             <span class="kw">let</span> <span class="ident">len_a</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">inverted</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">a</span>.<span class="ident">token</span>).<span class="ident">unwrap</span>().<span class="number">1</span>;
@@ -503,36 +473,32 @@ And it&#39;s a valid representation of the original string.
     }
 }
 
-<span class="doccomment">/**
-An InvertedList is a vector of ID-location pair, where ID is the line number where a certain token appears, and location is the index of that line where the token appear.
- */</span>
+<span class="doccomment">/// An InvertedList is a vector of ID-location pair, where ID is the line number where a certain token appears,</span>
+<span class="doccomment">/// and location is the index of that line where the token appear.</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">InvertedList</span> <span class="op">=</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">ID</span>, <span class="ident">Loc</span>)<span class="op">&gt;</span>;
-<span class="doccomment">/**
-An indexmap of inverted lists for each token. The keys are Token, while the values are a tuple of  InvertedList and usize.
 
-- When it&#39;s self-join, the usize is the total number of occurences of the token, and the InvertedList is for the document.
-- When it&#39;s not self-join, the usize is still the total number of occurences of the token, while the InvertedList is only for the second document.
-
- */</span>
+<span class="doccomment">/// An indexmap of inverted lists for each token. The keys are Token, while the values are a tuple of  InvertedList and usize.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// - When it&#39;s self-join, the usize is the total number of occurences of the token, and the InvertedList is for the document.</span>
+<span class="doccomment">/// - When it&#39;s not self-join, the usize is still the total number of occurences of the token, while the InvertedList is only for the second document.</span>
+<span class="doccomment">///</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">InvertedIndex</span> <span class="op">=</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Token</span>, (<span class="ident">InvertedList</span>, <span class="ident">usize</span>)<span class="op">&gt;</span>;
-<span class="comment">// pub(crate) type InvertedIndex = IndexMap&lt;Token, (InvertedList, InvertedList)&gt;;</span>
 
-<span class="doccomment">/**
-This function reads an entire file into a string, count q-grams by parallel iterators, and returns a hashmap where the keys are q-gram tokens, and values are a vector of line-position pair.
-
-It may look silly to do such a thing, but a file with 1 million lines where each line contains at most 200 characters isn&#39;t large. Suppose it&#39;s encoded in legacy encodings such as ASCII, or it only contains ASCII characters and is encoded in UTF-8, then each character takes one byte. And this file would takes around 200 megabytes, which is rather small. If the input file is larger, then simply divide the input to small slices in pre-processing.
-
-# Args
-
-* `doc_x` and `doc_y`: Path, absolute or relative, to documents to be processed.
-* `file_x_len` and `file_y_len`: Number of lines for each file. This is used
-* `q`: A tuning parameter used to generate the `q`-grams.
-
-# Returns
-
-* When succesful, returns a B-Tree map, where keys are numbers of occurences of all token, i.e. a q-gram, and values are vectors of tokens that have that number of occurences.
-
- */</span>
+<span class="doccomment">/// This function reads an entire file into a string, count q-grams by parallel iterators,</span>
+<span class="doccomment">/// and returns a hashmap where the keys are q-gram tokens, and values are a vector of line-position pair.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// NOTE: If the input file is larger, then simply divide the input to small slices in pre-processing. This would be implemented in the future.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Args</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// * `doc_x` and `doc_y`: Path, absolute or relative, to documents to be processed.</span>
+<span class="doccomment">/// * `file_x_len` and `file_y_len`: Number of lines for each file. This is used</span>
+<span class="doccomment">/// * `q`: A tuning parameter used to generate the `q`-grams.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Returns</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// * When succesful, returns a B-Tree map, where keys are numbers of occurences of all token, i.e. a q-gram,</span>
+<span class="doccomment">///   and values are vectors of tokens that have that number of occurences.</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">generate_inverted_index</span>(
     <span class="ident">doc_x</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>,
     <span class="ident">doc_y</span>: <span class="kw-2">&amp;</span><span class="ident">PathBuf</span>,
@@ -648,4 +614,4 @@ It may look silly to do such a thing, but a file with 1 million lines where each
     }
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p><p>You can look for items with an exact name by putting double quotes around your request: <code>"string"</code></p><p>Look for items inside another one by searching for a path: <code>vec::Vec</code></p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "ed_join";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "ed_join";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>

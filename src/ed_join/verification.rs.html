@@ -404,18 +404,19 @@
 <span class="kw">type</span> <span class="ident">SuffixSumArray</span> <span class="op">=</span> <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Loc</span>, <span class="ident">RightError</span>)<span class="op">&gt;</span>;
 
 <span class="comment">// Algorithm 8</span>
-<span class="doccomment">/**
-Given two sorted q-gram arrays, in increasing order of location, find the set of loosely mismatching q-grams and the number of strictly mismatching q-grams.
-
-# Parameters
- * `x` and `y`: PosQGramArrays as `source` and `target` for matching.
- * `invert`: The inverted index.
- * `tau`: A positive integer as the tuning parameter for threshold for matching.
-
-# Return
- * A set of loosely mismatching q-grams from `x` to `y`.
- * The number of strictly mismatching q-grams from `x` to `y`.
- */</span>
+<span class="doccomment">/// Given two sorted q-gram arrays, in increasing order of location,</span>
+<span class="doccomment">/// find the set of loosely mismatching q-grams and the number of strictly mismatching q-grams.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///  * `x` and `y`: PosQGramArrays as `source` and `target` for matching.</span>
+<span class="doccomment">///  * `invert`: The inverted index.</span>
+<span class="doccomment">///  * `tau`: A positive integer as the tuning parameter for threshold for matching.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Return</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///  * A set of loosely mismatching q-grams from `x` to `y`.</span>
+<span class="doccomment">///  * The number of strictly mismatching q-grams from `x` to `y`.</span>
 <span class="kw">fn</span> <span class="ident">compare_qgrams</span>(
     <span class="ident">x</span>: <span class="kw-2">&amp;</span><span class="ident">PosQGramArray</span>,
     <span class="ident">y</span>: <span class="kw-2">&amp;</span><span class="ident">PosQGramArray</span>,
@@ -474,16 +475,16 @@ Given two sorted q-gram arrays, in increasing order of location, find the set of
 }
 
 <span class="comment">// Based on Algorithm 2</span>
-<span class="doccomment">/**
-Given a set of q-grams, find the minimum number of edit operations in the suffix that destroys all q-grams.
-
-# Parameters
- * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.
- * `q`: A positive integer as the tuning parameter for length of q-grams.
-
-# Return
-The minimum number of edit operations on the suffix that destroy all q-grams.
- */</span>
+<span class="doccomment">/// Given a set of q-grams, find the minimum number of edit operations in the suffix that destroys all q-grams.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///  * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.</span>
+<span class="doccomment">///  * `q`: A positive integer as the tuning parameter for length of q-grams.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Return</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The minimum number of edit operations on the suffix that destroy all q-grams.</span>
 <span class="kw">fn</span> <span class="ident">sum_right_errors</span>(<span class="ident">qgram_array</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">PosQGramArray</span>, <span class="ident">q</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">SuffixSumArray</span><span class="op">&gt;</span> {
     <span class="kw">if</span> <span class="ident">qgram_array</span>.<span class="ident">len</span>() <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
         <span class="prelude-val">None</span>
@@ -522,16 +523,16 @@ The minimum number of edit operations on the suffix that destroy all q-grams.
 }
 
 <span class="comment">// Algorithm 6</span>
-<span class="doccomment">/**
-Given two strings, calculate their L1 distance.
-
-# Parameters
- * `s` and `t`: (Sub-)String that is under probing window.
- * `lo` and `hi`: Indicates the start and end point of the probing window.
-
-# Return
-L1 distance of the two given strings with given probing window.
- */</span>
+<span class="doccomment">/// Given two strings, calculate their L1 distance.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///  * `s` and `t`: (Sub-)String that is under probing window.</span>
+<span class="doccomment">///  * `lo` and `hi`: Indicates the start and end point of the probing window.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Return</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// L1 distance of the two given strings with given probing window.</span>
 <span class="kw">fn</span> <span class="ident">l1_distance</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">t</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">lo</span>: <span class="ident">usize</span>, <span class="ident">hi</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
     <span class="kw">let</span> <span class="ident">h_s</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">char</span>, <span class="ident">usize</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">frequency_histogram</span>(<span class="kw-2">&amp;</span><span class="ident">s</span>[<span class="ident">lo</span>..<span class="ident">hi</span>]);
     <span class="kw">let</span> <span class="ident">h_t</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">char</span>, <span class="ident">usize</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">frequency_histogram</span>(<span class="kw-2">&amp;</span><span class="ident">t</span>[<span class="ident">lo</span>..<span class="ident">hi</span>]);
@@ -558,19 +559,19 @@ L1 distance of the two given strings with given probing window.
 }
 
 <span class="comment">// Algorithm 5</span>
-<span class="doccomment">/**
-Content-based mismatch filtering by combining L1-distance and minimum edit errors in the suffix to the probing window.
-
-# Parameters
- * `s` and `t`: (Sub-)String that is under probing window.
- * `mismatch`: A PosQGramArray with loosely mismatching q-grams from `s` to `t`.
- * `suffix_sum`: A condensed suffix sum array.
- * `q`: A positive integer as the tuning parameter for length of q-grams.
- * `tau`: A positive integer as the tuning parameter for threshold for matching.
-
-# Return
-A lower bound of the edit distance from `s` to `t`.
- */</span>
+<span class="doccomment">/// Content-based mismatch filtering by combining L1-distance and minimum edit errors in the suffix to the probing window.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///  * `from` and `to`: (Sub-)String that is under probing window.</span>
+<span class="doccomment">///  * `mismatch`: A PosQGramArray with loosely mismatching q-grams from `s` to `t`.</span>
+<span class="doccomment">///  * `suffix_sum`: A condensed suffix sum array.</span>
+<span class="doccomment">///  * `q`: A positive integer as the tuning parameter for length of q-grams.</span>
+<span class="doccomment">///  * `tau`: A positive integer as the tuning parameter for threshold for matching.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Return</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// A lower bound of the edit distance from `s` to `t`.</span>
 <span class="kw">fn</span> <span class="ident">content_filter</span>(
     <span class="ident">from</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
     <span class="ident">to</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
@@ -614,23 +615,22 @@ A lower bound of the edit distance from `s` to `t`.
 }
 
 <span class="comment">// Algorithm 7</span>
-<span class="doccomment">/**
-Given a string and a set of possible candidates for matching, verify whether each of the candidate is valid by various filters, and eventually output all matched candidates and corresponding edit distance.
-
-# Parameters
- * `x`: The `inner` of a PosQGramArray, based on a line of `doc_x`
- * `line_id`: Line number of `x`
- * `line_content`: String representation of `x`
- * `y`: A PosQGramArray, based on a line of `doc_Y`
- * `candidates_id`: Line number of `y`.
- * `candidate_content`: String representation of `y`
- * `inverted`: The inverted index.
- * `q`: A positive integer as the tuning parameter for length of q-grams.
- * `tau`: A positive integer as the tuning parameter for threshold for matching.
-
-# Return
-Verified matched paris from the candidates set.
- */</span>
+<span class="doccomment">/// Given a string and a set of possible candidates for matching,</span>
+<span class="doccomment">/// verify whether each of the candidate is valid by various filters,</span>
+<span class="doccomment">/// and eventually output all matched candidates and corresponding edit distance.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Parameters</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// * `x` and `y`: The `inner` of a PosQGramArray, based on a line of `doc_x` or `doc_y`, respectively</span>
+<span class="doccomment">/// * `line_id` and `candidate_id`: Line number of `x` and `y`, respectively</span>
+<span class="doccomment">/// * `line_content` and `candidate_content`: String representation of `x` and `y`, respectively</span>
+<span class="doccomment">/// * `inverted`: The inverted index.</span>
+<span class="doccomment">/// * `q`: A positive integer as the tuning parameter for length of q-grams.</span>
+<span class="doccomment">/// * `tau`: A positive integer as the tuning parameter for threshold for matching.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Return</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Verified matched paris from the candidates set.</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify</span>(
     <span class="ident">x</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PosQGram</span><span class="op">&gt;</span>,
     <span class="ident">line_id</span>: <span class="ident">usize</span>,
@@ -788,4 +788,4 @@ Verified matched paris from the candidates set.
     }
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p><p>You can look for items with an exact name by putting double quotes around your request: <code>"string"</code></p><p>Look for items inside another one by searching for a path: <code>vec::Vec</code></p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "ed_join";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "ed_join";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
