@@ -19,9 +19,7 @@ pub(crate) type ID = usize;
 /// Corresponds to a position in a string where a token appears.
 pub(crate) type Loc = usize;
 
-/**
-A poistional q-gram is a `token`-`location` pair for a given string.
- */
+/// A poistional q-gram is a `token`-`location` pair for a given string.
 #[derive(Clone, Debug, Default)]
 pub struct PosQGram {
     pub token: Token,
@@ -50,38 +48,35 @@ impl Display for PosQGram {
     }
 }
 
-/**
-A collection of token-position pair, as an alternative representation of a string.
-
-For a given string `s` and a integer-valued parameter `q`, q-gram of a string `s` is a set of substrings of length `q`.
-The size of this collection is `s.len() - q`, in which individiual q-grams may not be unique.
-
-When `q` is 1, then the 1-gram (unigram) set is simply a set of all characters in string `s`.
-And we can represent `s` as a collection of index-unigram pairs, where the index indicates the position where the uniqgram appear in the `s`.
-For example,
-
-```text
-
-    +---+---+---+---+---+
-s   | H | e | l | l | o |  <=>  {(0, H), (1, l), (2, l), (3, l), (4, o)}  (index, uni-qgram) pairs
-    +---+---+---+---+---+
-
-```
-
-We can also represent `s` as a collection of index-qgram pair for any q, though there seem to have redundancy. For example, when `q` is 2 and 3
-
-```text
-    +---+---+---+---+---+
-s   | H | e | l | l | o |  <=>  {(0, He), (1, el), (2, ll), (3, lo)}  (index, bi-qgram) pairs
-    +---+---+---+---+---+
-
-                           <=>  {(0, Hel), (1, ell), (2, llo)}  (index, tri-qgram) pairs
-```
-
-Hence, we define positional q-gram array as a collection of token-location pair, where tokens are elements of a q-gram set of a string.
-And it's a valid representation of the original string.
-
- */
+/// A collection of token-position pair, as an alternative representation of a string.
+///
+/// For a given string `s` and a integer-valued parameter `q`, q-gram of a string `s` is a set of substrings of length `q`.
+/// The size of this collection is `s.len() - q`, in which individiual q-grams may not be unique.
+///
+/// When `q` is 1, then the 1-gram (unigram) set is simply a set of all characters in string `s`.
+/// And we can represent `s` as a collection of index-unigram pairs, where the index indicates the position where the uniqgram appear in the `s`.
+/// For example,
+///
+/// ```text
+///
+///     +---+---+---+---+---+
+/// s   | H | e | l | l | o |  <=>  {(0, H), (1, l), (2, l), (3, l), (4, o)}  (index, uni-qgram) pairs
+///     +---+---+---+---+---+
+///
+/// ```
+///
+/// We can also represent `s` as a collection of index-qgram pair for any q, though there seem to have redundancy. For example, when `q` is 2 and 3
+///
+/// ```text
+///     +---+---+---+---+---+
+/// s   | H | e | l | l | o |  <=>  {(0, He), (1, el), (2, ll), (3, lo)}  (index, bi-qgram) pairs
+///     +---+---+---+---+---+
+///
+///                            <=>  {(0, Hel), (1, ell), (2, llo)}  (index, tri-qgram) pairs
+/// ```
+///
+/// Hence, we define positional q-gram array as a collection of token-location pair, where tokens are elements of a q-gram set of a string.
+/// And it's a valid representation of the original string.
 #[derive(Debug)]
 pub struct PosQGramArray {
     pub inner: Vec<PosQGram>,
@@ -94,18 +89,13 @@ impl PosQGramArray {
         }
     }
 
-    /**
-    Convenient method for converting a vector of PosQGram to PosQGramArray
-     */
+    /// Convenient method for converting a vector of PosQGram to PosQGramArray
     pub fn from_vec(inner: Vec<PosQGram>) -> Self {
         Self { inner }
     }
 
-    /**
-    Given a string and a given `q`, generate a PosQGramArray.
-
-    NOTE: The position QGramArray is sorted in increasing order of location.
-     */
+    /// Given a string and a given `q`, generate a PosQGramArray.
+    // NOTE: The position QGramArray is sorted in increasing order of location.
     pub fn from(s: &str, q: usize) -> Self {
         let slice: Vec<String> = Vec::from(s)
             .par_windows(q)
@@ -127,13 +117,10 @@ impl PosQGramArray {
         Self { inner }
     }
 
-    /**
-    Actually, it's sorted in the following hierarchical order:
-
-    - Firstly, in decreasing order of frequency
-    - Secondly, in lexicographical order of token name
-
-    */
+    /// Actually, it's sorted in the following hierarchical order:
+    ///
+    /// - Firstly, in decreasing order of frequency
+    /// - Secondly, in lexicographical order of token name
     pub fn sort_by_frequency(&mut self, inverted: &InvertedIndex) {
         self.par_sort_unstable_by(|a, b| {
             let len_a: usize = inverted.get(&a.token).unwrap().1;
@@ -178,36 +165,32 @@ impl Display for PosQGramArray {
     }
 }
 
-/**
-An InvertedList is a vector of ID-location pair, where ID is the line number where a certain token appears, and location is the index of that line where the token appear.
- */
+/// An InvertedList is a vector of ID-location pair, where ID is the line number where a certain token appears,
+/// and location is the index of that line where the token appear.
 pub type InvertedList = Vec<(ID, Loc)>;
-/**
-An indexmap of inverted lists for each token. The keys are Token, while the values are a tuple of  InvertedList and usize.
 
-- When it's self-join, the usize is the total number of occurences of the token, and the InvertedList is for the document.
-- When it's not self-join, the usize is still the total number of occurences of the token, while the InvertedList is only for the second document.
-
- */
+/// An indexmap of inverted lists for each token. The keys are Token, while the values are a tuple of  InvertedList and usize.
+///
+/// - When it's self-join, the usize is the total number of occurences of the token, and the InvertedList is for the document.
+/// - When it's not self-join, the usize is still the total number of occurences of the token, while the InvertedList is only for the second document.
+///
 pub type InvertedIndex = HashMap<Token, (InvertedList, usize)>;
-// pub(crate) type InvertedIndex = IndexMap<Token, (InvertedList, InvertedList)>;
 
-/**
-This function reads an entire file into a string, count q-grams by parallel iterators, and returns a hashmap where the keys are q-gram tokens, and values are a vector of line-position pair.
-
-It may look silly to do such a thing, but a file with 1 million lines where each line contains at most 200 characters isn't large. Suppose it's encoded in legacy encodings such as ASCII, or it only contains ASCII characters and is encoded in UTF-8, then each character takes one byte. And this file would takes around 200 megabytes, which is rather small. If the input file is larger, then simply divide the input to small slices in pre-processing.
-
-# Args
-
-* `doc_x` and `doc_y`: Path, absolute or relative, to documents to be processed.
-* `file_x_len` and `file_y_len`: Number of lines for each file. This is used
-* `q`: A tuning parameter used to generate the `q`-grams.
-
-# Returns
-
-* When succesful, returns a B-Tree map, where keys are numbers of occurences of all token, i.e. a q-gram, and values are vectors of tokens that have that number of occurences.
-
- */
+/// This function reads an entire file into a string, count q-grams by parallel iterators,
+/// and returns a hashmap where the keys are q-gram tokens, and values are a vector of line-position pair.
+///
+/// NOTE: If the input file is larger, then simply divide the input to small slices in pre-processing. This would be implemented in the future.
+///
+/// # Args
+///
+/// * `doc_x` and `doc_y`: Path, absolute or relative, to documents to be processed.
+/// * `file_x_len` and `file_y_len`: Number of lines for each file. This is used
+/// * `q`: A tuning parameter used to generate the `q`-grams.
+///
+/// # Returns
+///
+/// * When succesful, returns a B-Tree map, where keys are numbers of occurences of all token, i.e. a q-gram,
+///   and values are vectors of tokens that have that number of occurences.
 pub fn generate_inverted_index(
     doc_x: &PathBuf,
     doc_y: &PathBuf,

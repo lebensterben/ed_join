@@ -18,16 +18,16 @@ use indicatif::{ParallelProgressIterator, ProgressBar};
 
 // Algorithm 2
 // NOTE: PosQGram is not by default sorted in increasing frequency
-/**
-Given a set of q-grams, find the minimum number of edit operations that destroys all q-grams.
-
-# Parameters
- * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.
- * `q`: A positive integer as the tuning parameter for length of q-grams.
-
-# Return
-The minimum number of edit operations that destroy all q-grams in the given set.
- */
+/// Given a set of q-grams, find the minimum number of edit operations that destroys all q-grams.
+///
+/// # Parameters
+///
+///  * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.
+///  * `q`: A positive integer as the tuning parameter for length of q-grams.
+///
+/// # Return
+///
+/// The minimum number of edit operations that destroy all q-grams in the given set.
 pub fn min_edit_errors(qgram_array: &[PosQGram], q: usize) -> usize {
     let mut cnt = 0;
     let mut loc = 0;
@@ -50,17 +50,20 @@ pub fn min_edit_errors(qgram_array: &[PosQGram], q: usize) -> usize {
 }
 
 // Algorithm 3
-/**
-Given a set of q-grams, find the minimum length of prefix such that if all the q-grams in the prefix are mismatched, it will incur at least `tau + ` edit errors.
-
-# Parameters
- * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.
- * `q`: A positive integer as the tuning parameter for length of q-grams.
- * `tau`: A positive integer as the tuning parameter for threshold for matching.
-
-# Return
-The minimum length of prefix such that if all the q-grams in the prefix are mismatched, it will incur at least `tau + ` edit errors.
- */
+///
+/// Given a set of q-grams, find the minimum length of prefix such that if all the q-grams in the prefix are mismatched,
+/// it will incur at least `tau + ` ed/it errors.
+///
+/// # Parameters
+///
+///  * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.
+///  * `q`: A positive integer as the tuning parameter for length of q-grams.
+///  * `tau`: A positive integer as the tuning parameter for threshold for matching.
+///
+/// # Return
+///
+/// The minimum length of prefix such that if all the q-grams in the prefix are mismatched,
+/// it will incur at least `tau + ` edit errors.
 pub fn calc_prefix_len(qgram_array: &mut PosQGramArray, q: usize, tau: usize) -> usize {
     let mut left: usize = tau + 1;
     let mut right: usize = q * tau + 1;
@@ -88,17 +91,21 @@ pub fn calc_prefix_len(qgram_array: &mut PosQGramArray, q: usize, tau: usize) ->
 }
 
 // Algorithm 1
-/**
-Given two input files, `doc_x` and `doc_y`, and two parameters, `q` and `tau`, find all records in `doc_y` that match records in `doc_x` such that are matched pairs have edit-distance smaller or equal to `tau`.
-
-# Parameters
- * `doc_x` and `doc_y`: Paths to a input files, in which we process each record in `doc_x` and looking for valid matches in `doc_y`
- * `q`: A positive integer as the tuning parameter for length of q-grams. Large `q` reduces the amount of tokens in pre-matching, but makes filtering less effective. Small `q` generates large amount of tokens for filtering, the output of filtering are more likely to be valid matches, but this prolongs the time on filtering.
- * `tau`: A positive integer as the tuning parameter for threshold for matching.
-
-# Return
-All matching pairs. This would be stored in a output file automatically under the same directory of the first input file.
- */
+/// Given two input files, `doc_x` and `doc_y`, and two parameters, `q` and `tau`,
+/// find all records in `doc_y` that match records in `doc_x` such that are matched pairs have edit-distance smaller or equal to `tau`.
+///
+/// # Parameters
+///
+///  * `doc_x` and `doc_y`: Paths to a input files, in which we process each record in `doc_x`
+///    and looking for valid matches in `doc_y`
+///  * `q`: A positive integer as the tuning parameter for length of q-grams. Large `q` reduces the amount of tokens in pre-matching,
+///    but makes filtering less effective. Small `q` generates large amount of tokens for filtering,
+///    the output of filtering are more likely to be valid matches, but this prolongs the time on filtering.
+///  * `tau`: A positive integer as the tuning parameter for threshold for matching.
+///
+/// # Return
+///
+/// All matching pairs. This would be stored in a output file automatically under the same directory of the first input file.
 pub fn ed_join(doc_x: &PathBuf, doc_y: &PathBuf, q: usize, tau: usize) -> Result<()> {
     // `doc_x` is read by a BufReader, line by line
     let file_x: File = File::open(doc_x)?;

@@ -9,18 +9,19 @@ type RightError = usize;
 type SuffixSumArray = Vec<(Loc, RightError)>;
 
 // Algorithm 8
-/**
-Given two sorted q-gram arrays, in increasing order of location, find the set of loosely mismatching q-grams and the number of strictly mismatching q-grams.
-
-# Parameters
- * `x` and `y`: PosQGramArrays as `source` and `target` for matching.
- * `invert`: The inverted index.
- * `tau`: A positive integer as the tuning parameter for threshold for matching.
-
-# Return
- * A set of loosely mismatching q-grams from `x` to `y`.
- * The number of strictly mismatching q-grams from `x` to `y`.
- */
+/// Given two sorted q-gram arrays, in increasing order of location,
+/// find the set of loosely mismatching q-grams and the number of strictly mismatching q-grams.
+///
+/// # Parameters
+///
+///  * `x` and `y`: PosQGramArrays as `source` and `target` for matching.
+///  * `invert`: The inverted index.
+///  * `tau`: A positive integer as the tuning parameter for threshold for matching.
+///
+/// # Return
+///
+///  * A set of loosely mismatching q-grams from `x` to `y`.
+///  * The number of strictly mismatching q-grams from `x` to `y`.
 fn compare_qgrams(
     x: &PosQGramArray,
     y: &PosQGramArray,
@@ -79,16 +80,16 @@ fn compare_qgrams(
 }
 
 // Based on Algorithm 2
-/**
-Given a set of q-grams, find the minimum number of edit operations in the suffix that destroys all q-grams.
-
-# Parameters
- * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.
- * `q`: A positive integer as the tuning parameter for length of q-grams.
-
-# Return
-The minimum number of edit operations on the suffix that destroy all q-grams.
- */
+/// Given a set of q-grams, find the minimum number of edit operations in the suffix that destroys all q-grams.
+///
+/// # Parameters
+///
+///  * `qgram_array`: A PosQGramArray, i.e. a set of positional q-grams.
+///  * `q`: A positive integer as the tuning parameter for length of q-grams.
+///
+/// # Return
+///
+/// The minimum number of edit operations on the suffix that destroy all q-grams.
 fn sum_right_errors(qgram_array: &mut PosQGramArray, q: usize) -> Option<SuffixSumArray> {
     if qgram_array.len() == 0 {
         None
@@ -127,16 +128,16 @@ fn frequency_histogram(s: &str) -> HashMap<char, usize> {
 }
 
 // Algorithm 6
-/**
-Given two strings, calculate their L1 distance.
-
-# Parameters
- * `s` and `t`: (Sub-)String that is under probing window.
- * `lo` and `hi`: Indicates the start and end point of the probing window.
-
-# Return
-L1 distance of the two given strings with given probing window.
- */
+/// Given two strings, calculate their L1 distance.
+///
+/// # Parameters
+///
+///  * `s` and `t`: (Sub-)String that is under probing window.
+///  * `lo` and `hi`: Indicates the start and end point of the probing window.
+///
+/// # Return
+///
+/// L1 distance of the two given strings with given probing window.
 fn l1_distance(s: &str, t: &str, lo: usize, hi: usize) -> usize {
     let h_s: HashMap<char, usize> = frequency_histogram(&s[lo..hi]);
     let h_t: HashMap<char, usize> = frequency_histogram(&t[lo..hi]);
@@ -163,19 +164,19 @@ fn l1_distance(s: &str, t: &str, lo: usize, hi: usize) -> usize {
 }
 
 // Algorithm 5
-/**
-Content-based mismatch filtering by combining L1-distance and minimum edit errors in the suffix to the probing window.
-
-# Parameters
- * `s` and `t`: (Sub-)String that is under probing window.
- * `mismatch`: A PosQGramArray with loosely mismatching q-grams from `s` to `t`.
- * `suffix_sum`: A condensed suffix sum array.
- * `q`: A positive integer as the tuning parameter for length of q-grams.
- * `tau`: A positive integer as the tuning parameter for threshold for matching.
-
-# Return
-A lower bound of the edit distance from `s` to `t`.
- */
+/// Content-based mismatch filtering by combining L1-distance and minimum edit errors in the suffix to the probing window.
+///
+/// # Parameters
+///
+///  * `from` and `to`: (Sub-)String that is under probing window.
+///  * `mismatch`: A PosQGramArray with loosely mismatching q-grams from `s` to `t`.
+///  * `suffix_sum`: A condensed suffix sum array.
+///  * `q`: A positive integer as the tuning parameter for length of q-grams.
+///  * `tau`: A positive integer as the tuning parameter for threshold for matching.
+///
+/// # Return
+///
+/// A lower bound of the edit distance from `s` to `t`.
 fn content_filter(
     from: &str,
     to: &str,
@@ -219,23 +220,22 @@ fn content_filter(
 }
 
 // Algorithm 7
-/**
-Given a string and a set of possible candidates for matching, verify whether each of the candidate is valid by various filters, and eventually output all matched candidates and corresponding edit distance.
-
-# Parameters
- * `x`: The `inner` of a PosQGramArray, based on a line of `doc_x`
- * `line_id`: Line number of `x`
- * `line_content`: String representation of `x`
- * `y`: A PosQGramArray, based on a line of `doc_Y`
- * `candidates_id`: Line number of `y`.
- * `candidate_content`: String representation of `y`
- * `inverted`: The inverted index.
- * `q`: A positive integer as the tuning parameter for length of q-grams.
- * `tau`: A positive integer as the tuning parameter for threshold for matching.
-
-# Return
-Verified matched paris from the candidates set.
- */
+/// Given a string and a set of possible candidates for matching,
+/// verify whether each of the candidate is valid by various filters,
+/// and eventually output all matched candidates and corresponding edit distance.
+///
+/// # Parameters
+///
+/// * `x` and `y`: The `inner` of a PosQGramArray, based on a line of `doc_x` or `doc_y`, respectively
+/// * `line_id` and `candidate_id`: Line number of `x` and `y`, respectively
+/// * `line_content` and `candidate_content`: String representation of `x` and `y`, respectively
+/// * `inverted`: The inverted index.
+/// * `q`: A positive integer as the tuning parameter for length of q-grams.
+/// * `tau`: A positive integer as the tuning parameter for threshold for matching.
+///
+/// # Return
+///
+/// Verified matched paris from the candidates set.
 pub fn verify(
     x: Vec<PosQGram>,
     line_id: usize,
