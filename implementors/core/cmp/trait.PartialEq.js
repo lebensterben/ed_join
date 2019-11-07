@@ -64,4 +64,5 @@ implementors["void"] = [{text:"impl&lt;T&gt; <a class=\"trait\" href=\"https://d
             } else {
                 window.pending_implementors = implementors;
             }
-        })()
+        
+})()

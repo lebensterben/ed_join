@@ -6,4 +6,5 @@ implementors["crossbeam_utils"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        })()
+        
+})()
