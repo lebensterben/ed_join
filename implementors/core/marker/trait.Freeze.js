@@ -105,4 +105,5 @@ implementors["walkdir"] = [{text:"impl Freeze for <a class=\"struct\" href=\"wal
             } else {
                 window.pending_implementors = implementors;
             }
-        })()
+        
+})()

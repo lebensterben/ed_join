@@ -6,4 +6,5 @@ implementors["error_chain"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        })()
+        
+})()
