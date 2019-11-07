@@ -7,5 +7,4 @@ implementors["rayon"] = [];
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()

@@ -21,5 +21,4 @@ implementors["tantivy_fst"] = [{text:"impl&lt;'f, I, S&gt; <a class=\"trait\" hr
             } else {
                 window.pending_implementors = implementors;
             }
-        
-})()
+        })()
