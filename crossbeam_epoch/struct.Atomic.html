@@ -165,8 +165,8 @@ operation.</p>
 <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">a</span>.<span class="ident">fetch_xor</span>(<span class="number">3</span>, <span class="ident">SeqCst</span>, <span class="ident">guard</span>).<span class="ident">tag</span>(), <span class="number">1</span>);
 <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">a</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>, <span class="ident">guard</span>).<span class="ident">tag</span>(), <span class="number">2</span>);</pre></div>
 </div><h4 id='method.into_owned' class="method"><code id='into_owned.v'>pub unsafe fn <a href='#method.into_owned' class='fnname'>into_owned</a>(self) -&gt; <a class="struct" href="../crossbeam_epoch/struct.Owned.html" title="struct crossbeam_epoch::Owned">Owned</a>&lt;T&gt;</code><a class='srclink' href='../src/crossbeam_epoch/atomic.rs.html#508-510' title='goto source code'>[src]</a></h4><div class='docblock'><p>Takes ownership of the pointee.</p>
-<p>This consumes the atomic and converts it into [<code>Owned</code>]. As [<code>Atomic</code>] doesn't have a
-destructor and doesn't drop the pointee while [<code>Owned</code>] does, this is suitable for
+<p>This consumes the atomic and converts it into <a href="../crossbeam_epoch/struct.Owned.html" title="`Owned`"><code>Owned</code></a>. As <a href="../crossbeam_epoch/struct.Atomic.html" title="`Atomic`"><code>Atomic</code></a> doesn't have a
+destructor and doesn't drop the pointee while <a href="../crossbeam_epoch/struct.Owned.html" title="`Owned`"><code>Owned</code></a> does, this is suitable for
 destructors of data structures.</p>
 <h1 id="panics" class="section-header"><a href="#panics">Panics</a></h1>
 <p>Panics if this pointer is null, but only in debug mode.</p>
