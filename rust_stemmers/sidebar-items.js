@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["Algorithm","Enum of all supported algorithms. Check the Snowball-Website for details."]],"struct":[["Stemmer","Wrapps a usable interface around the actual stemmer implementation"]]});

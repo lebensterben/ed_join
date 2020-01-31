@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["errors",""],["matching",""],["qgram",""],["verification",""]]});
+initSidebarItems({"mod":[["matching",""],["qgram",""],["verification",""]]});
