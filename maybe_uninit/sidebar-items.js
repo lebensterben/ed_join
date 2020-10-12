@@ -1,1 +1,1 @@
-initSidebarItems({"union":[["MaybeUninit","A wrapper type to construct uninitialized instances of `T`."]]});
+initSidebarItems({"union":[["MaybeUninit",""]]});
