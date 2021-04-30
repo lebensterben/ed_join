@@ -1,1 +1,0 @@
-window.ALL_CRATES = ["addr2line","adler","backtrace","cfg_if","crossbeam_channel","crossbeam_deque","crossbeam_epoch","crossbeam_utils","ed_join","edit_distance","either","error_chain","gimli","lazy_static","libc","memoffset","miniz_oxide","num_cpus","object","rayon","rayon_core","rustc_demangle","scopeguard"];
